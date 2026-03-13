@@ -7,13 +7,19 @@ from .types.annotation import *
 from .types.bounding_box import *
 from .types.chapter import *
 from .types.interval import *
+from .types.named_entity import *
+from .types.noun_chunk import *
+from .types.paragraph import *
 from .types.polygon import *
 from .types.region import *
 from .types.relation import *
+from .types.sentence import *
 from .types.span import *
 from .types.thing import *
 from .types.time_frame import *
 from .types.time_point import *
+from .types.token import *
+from .types.verb_chunk import *
 from .types.video_object import *
 from .types.audio_document import *
 from .types.document import *
@@ -34,7 +40,7 @@ class Enums:
     """Namespace for all controlled vocabularies."""
     pass
 
-for _cls in [Alignment_v1, Alignment, Annotation_v2, Annotation_v3, Annotation_v4, Annotation_v5, Annotation, BoundingBox_v1, BoundingBox_v2, BoundingBox_v3, BoundingBox_v4, BoundingBox, Chapter_v1, Chapter_v2, Chapter_v3, Chapter_v4, Chapter_v5, Chapter, Interval_v1, Interval_v2, Interval_v3, Interval_v4, Interval, Polygon_v1, Polygon_v2, Polygon_v3, Polygon_v4, Polygon, Region_v1, Region_v2, Region_v3, Region_v4, Region, Relation_v1, Relation_v2, Relation_v3, Relation_v4, Relation, Span_v1, Span_v2, Span_v3, Span_v4, Span, Thing_v1, Thing, TimeFrame_v1, TimeFrame_v2, TimeFrame_v3, TimeFrame_v4, TimeFrame_v5, TimeFrame, TimePoint_v1, TimePoint_v2, TimePoint_v3, TimePoint_v4, TimePoint, VideoObject_v1, VideoObject_v2, VideoObject_v3, VideoObject_v4, VideoObject]:
+for _cls in [Alignment_v1, Alignment, Annotation_v2, Annotation_v3, Annotation_v4, Annotation_v5, Annotation_v6, Annotation, BoundingBox_v1, BoundingBox_v2, BoundingBox_v3, BoundingBox_v4, BoundingBox_v5, BoundingBox, Chapter_v1, Chapter_v2, Chapter_v3, Chapter_v4, Chapter_v5, Chapter_v6, Chapter, Interval_v1, Interval_v2, Interval_v3, Interval_v4, Interval_v5, Interval, NamedEntity_v1, NamedEntity, NounChunk_v1, NounChunk, Paragraph_v1, Paragraph, Polygon_v1, Polygon_v2, Polygon_v3, Polygon_v4, Polygon_v5, Polygon, Region_v1, Region_v2, Region_v3, Region_v4, Region_v5, Region, Relation_v1, Relation_v2, Relation_v3, Relation_v4, Relation_v5, Relation, Sentence_v1, Sentence, Span_v1, Span_v2, Span_v3, Span_v4, Span_v5, Span, Thing_v1, Thing, TimeFrame_v1, TimeFrame_v2, TimeFrame_v3, TimeFrame_v4, TimeFrame_v5, TimeFrame_v6, TimeFrame, TimePoint_v1, TimePoint_v2, TimePoint_v3, TimePoint_v4, TimePoint_v5, TimePoint, Token_v1, Token, VerbChunk_v1, VerbChunk, VideoObject_v1, VideoObject_v2, VideoObject_v3, VideoObject_v4, VideoObject_v5, VideoObject]:
     setattr(AnnotationTypes, _cls.__name__, _cls)
 
 for _cls in [AudioDocument_v1, AudioDocument, Document_v1, Document, ImageDocument_v1, ImageDocument, TextDocument_v1, TextDocument, VideoDocument_v1, VideoDocument]:
@@ -48,12 +54,12 @@ for _attr in dir(AnnotationTypes):
         if hasattr(_cls, "_property_aliases"):
             AnnotationTypes._prop_aliases[_cls.__name__] = _cls._property_aliases
 
-AnnotationTypes._typevers = {_t.shortname: _t.version for _t in [Alignment, Annotation, BoundingBox, Chapter, Interval, Polygon, Region, Relation, Span, Thing, TimeFrame, TimePoint, VideoObject]}
+AnnotationTypes._typevers = {_t.shortname: _t.version for _t in [Alignment, Annotation, BoundingBox, Chapter, Interval, NamedEntity, NounChunk, Paragraph, Polygon, Region, Relation, Sentence, Span, Thing, TimeFrame, TimePoint, Token, VerbChunk, VideoObject]}
 
 DocumentTypes._typevers = {_t.shortname: _t.version for _t in [AudioDocument, Document, ImageDocument, TextDocument, VideoDocument]}
 
 URI_TO_TYPE = {}
-for _type in [Alignment_v1, Alignment, Annotation_v2, Annotation_v3, Annotation_v4, Annotation_v5, Annotation, BoundingBox_v1, BoundingBox_v2, BoundingBox_v3, BoundingBox_v4, BoundingBox, Chapter_v1, Chapter_v2, Chapter_v3, Chapter_v4, Chapter_v5, Chapter, Interval_v1, Interval_v2, Interval_v3, Interval_v4, Interval, Polygon_v1, Polygon_v2, Polygon_v3, Polygon_v4, Polygon, Region_v1, Region_v2, Region_v3, Region_v4, Region, Relation_v1, Relation_v2, Relation_v3, Relation_v4, Relation, Span_v1, Span_v2, Span_v3, Span_v4, Span, Thing_v1, Thing, TimeFrame_v1, TimeFrame_v2, TimeFrame_v3, TimeFrame_v4, TimeFrame_v5, TimeFrame, TimePoint_v1, TimePoint_v2, TimePoint_v3, TimePoint_v4, TimePoint, VideoObject_v1, VideoObject_v2, VideoObject_v3, VideoObject_v4, VideoObject, AudioDocument_v1, AudioDocument, Document_v1, Document, ImageDocument_v1, ImageDocument, TextDocument_v1, TextDocument, VideoDocument_v1, VideoDocument]:
+for _type in [Alignment_v1, Alignment, Annotation_v2, Annotation_v3, Annotation_v4, Annotation_v5, Annotation_v6, Annotation, BoundingBox_v1, BoundingBox_v2, BoundingBox_v3, BoundingBox_v4, BoundingBox_v5, BoundingBox, Chapter_v1, Chapter_v2, Chapter_v3, Chapter_v4, Chapter_v5, Chapter_v6, Chapter, Interval_v1, Interval_v2, Interval_v3, Interval_v4, Interval_v5, Interval, NamedEntity_v1, NamedEntity, NounChunk_v1, NounChunk, Paragraph_v1, Paragraph, Polygon_v1, Polygon_v2, Polygon_v3, Polygon_v4, Polygon_v5, Polygon, Region_v1, Region_v2, Region_v3, Region_v4, Region_v5, Region, Relation_v1, Relation_v2, Relation_v3, Relation_v4, Relation_v5, Relation, Sentence_v1, Sentence, Span_v1, Span_v2, Span_v3, Span_v4, Span_v5, Span, Thing_v1, Thing, TimeFrame_v1, TimeFrame_v2, TimeFrame_v3, TimeFrame_v4, TimeFrame_v5, TimeFrame_v6, TimeFrame, TimePoint_v1, TimePoint_v2, TimePoint_v3, TimePoint_v4, TimePoint_v5, TimePoint, Token_v1, Token, VerbChunk_v1, VerbChunk, VideoObject_v1, VideoObject_v2, VideoObject_v3, VideoObject_v4, VideoObject_v5, VideoObject, AudioDocument_v1, AudioDocument, Document_v1, Document, ImageDocument_v1, ImageDocument, TextDocument_v1, TextDocument, VideoDocument_v1, VideoDocument]:
     URI_TO_TYPE[_type.uri] = _type
     for aka in _type.alsoKnownAs:
         URI_TO_TYPE[aka] = _type

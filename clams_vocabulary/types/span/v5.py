@@ -1,9 +1,17 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, Optional
 from pydantic import Field
-from clams_vocabulary.types.interval.archetype import Interval
+from clams_vocabulary.types.interval.v5 import Interval_v5
 
 
-class Span(Interval):
+class Span_v5(Interval_v5):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/Span/v5"
+    version: ClassVar[str] = "v5"
+    shortname: ClassVar[str] = "Span"
+
     _property_aliases: ClassVar[dict] = {
         'text': {'text', 'word'},
     }

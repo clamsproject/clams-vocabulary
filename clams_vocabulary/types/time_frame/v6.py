@@ -1,9 +1,17 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, Optional
 from pydantic import Field
-from clams_vocabulary.types.interval.archetype import Interval
+from clams_vocabulary.types.interval.v5 import Interval_v5
 
 
-class TimeFrame(Interval):
+class TimeFrame_v6(Interval_v5):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/TimeFrame/v6"
+    version: ClassVar[str] = "v6"
+    shortname: ClassVar[str] = "TimeFrame"
+
     _property_aliases: ClassVar[dict] = {
         'classification': {'classification', 'classifications'},
         'label': {'frameType', 'label'},

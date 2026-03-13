@@ -6,10 +6,11 @@ from .v1 import Interval_v1
 from .v2 import Interval_v2
 from .v3 import Interval_v3
 from .v4 import Interval_v4
+from .v5 import Interval_v5
 
 
-class Interval(Interval_v4):
-    """Latest version alias for Interval_v4."""
+class Interval(Interval_v5):
+    """Latest version alias for Interval_v5."""
     pass
 
-__all__ = ['Interval_v1', 'Interval_v2', 'Interval_v3', 'Interval_v4', 'Interval']
+__all__ = ['Interval_v1', 'Interval_v2', 'Interval_v3', 'Interval_v4', 'Interval_v5', 'Interval']
