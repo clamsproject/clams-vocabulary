@@ -1,9 +1,17 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, Optional
 from pydantic import Field
-from clams_vocabulary.types.polygon.archetype import Polygon
+from clams_vocabulary.types.polygon.v4 import Polygon_v4
 
 
-class BoundingBox(Polygon):
+class BoundingBox_v4(Polygon_v4):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/BoundingBox/v4"
+    version: ClassVar[str] = "v4"
+    shortname: ClassVar[str] = "BoundingBox"
+
     _property_aliases: ClassVar[dict] = {
         'classification': {'classification', 'classifications'},
         'label': {'boxType', 'label'},

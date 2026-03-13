@@ -1,9 +1,17 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, List, Optional
 from pydantic import Field
-from clams_vocabulary.types.region.archetype import Region
+from clams_vocabulary.types.region.v4 import Region_v4
 
 
-class Interval(Region):
+class Interval_v4(Region_v4):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/Interval/v4"
+    version: ClassVar[str] = "v4"
+    shortname: ClassVar[str] = "Interval"
+
     description: ClassVar[str] = (
         "An annotation over an interval of linear primary data, either a text, a video or audio stream. An Interval "
         "may be defined by pointing directly into primary data (by using start and end offsets) or by linking to one "
