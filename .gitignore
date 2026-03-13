@@ -77,3 +77,7 @@ $RECYCLE.BIN/
 # End of https://www.toptal.com/developers/gitignore/api/linux,macos,windows
 
 **/__pycache__
+# migration temporary files 
+extracted_types
+MIGRATION*
+build-tools/*.py

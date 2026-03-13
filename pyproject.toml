@@ -1,0 +1,5 @@
+[project]
+name = "clams-vocabulary"
+
+[project.urls]
+type_prefix = "http://clams.ai/vocabulary/type"

@@ -1,0 +1,30 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
+from typing import ClassVar, Optional
+from pydantic import Field
+from clams_vocabulary.types.annotation.v2 import Annotation_v2
+
+
+class Region_v1(Annotation_v2):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/Region/v1"
+    version: ClassVar[str] = "v1"
+    shortname: ClassVar[str] = "Region"
+
+    description: ClassVar[str] = (
+        "An annotation over a region in primary data where primary data can be a text, an image, an audio stream or a "
+        "video streem. Typically one of the sub types of this will be used."
+    )
+    alsoKnownAs: ClassVar[list[str]] = [
+        "http://mmif.clams.ai/vocabulary/Region/v1",
+        "http://mmif.clams.ai/0.4.0/vocabulary/Region/",
+        "http://mmif.clams.ai/0.4.1/vocabulary/Region/",
+        "http://mmif.clams.ai/0.4.2/vocabulary/Region/",
+    ]
+
+    timeUnit: Optional[str] = Field(
+        None,
+        description="Specifies which unit of time the measurement is based. Can be *seconds* or *milliseconds*, or "
+                    "in case of annotations on a VideoDocument, *frames*."
+    )
