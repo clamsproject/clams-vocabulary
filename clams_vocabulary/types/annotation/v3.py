@@ -1,10 +1,18 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, Dict, List, Optional
 from pydantic import Field
-from clams_vocabulary.types.thing.archetype import Thing
+from clams_vocabulary.types.thing.v1 import Thing_v1
 from clams_vocabulary.base import AnnotationTypesBase
 
 
-class Annotation(Thing, AnnotationTypesBase):
+class Annotation_v3(Thing_v1, AnnotationTypesBase):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/Annotation/v3"
+    version: ClassVar[str] = "v3"
+    shortname: ClassVar[str] = "Annotation"
+
     description: ClassVar[str] = (
         "Any kind of information added to a document. If an annotation is specific to a region over the primary data "
         "or a relation over such regions, specific sub-types should be used instead of this high-level type."
