@@ -1,10 +1,18 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, Dict, List, Optional
 from pydantic import Field
-from clams_vocabulary.types.thing.archetype import Thing
+from clams_vocabulary.types.thing.v1 import Thing_v1
 from clams_vocabulary.base import AnnotationTypesBase
 
 
-class Annotation(Thing, AnnotationTypesBase):
+class Annotation_v5(Thing_v1, AnnotationTypesBase):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/Annotation/v5"
+    version: ClassVar[str] = "v5"
+    shortname: ClassVar[str] = "Annotation"
+
     _property_aliases: ClassVar[dict] = {
         'classification': {'classification', 'classifications'},
     }
