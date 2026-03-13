@@ -1,9 +1,17 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, List, Optional
 from pydantic import Field
-from clams_vocabulary.types.region.archetype import Region
+from clams_vocabulary.types.region.v3 import Region_v3
 
 
-class Polygon(Region):
+class Polygon_v3(Region_v3):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/Polygon/v3"
+    version: ClassVar[str] = "v3"
+    shortname: ClassVar[str] = "Polygon"
+
     description: ClassVar[str] = (
         "A polygon in an image or video. This is a two-dimensional object so if this occurs in a video it will be "
         "anchored to a particular frame or time point in the video."
