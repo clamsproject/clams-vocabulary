@@ -5,7 +5,6 @@ from clams_vocabulary.types.interval.archetype import Interval
 
 class TimeFrame(Interval):
     _property_aliases: ClassVar[dict] = {
-        'classification': {'classification', 'classifications'},
         'label': {'frameType', 'label'},
     }
 

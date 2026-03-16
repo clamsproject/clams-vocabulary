@@ -482,8 +482,63 @@ class ClamsTypesBase(TypesBase, metaclass=ClamsTypesBaseMeta):
 class AnnotationTypesBase(ClamsTypesBase):
     """
     Thin wrapper for "annotation" types as opposed to "document" types.
+
+    Provides automatic ``_property_aliases`` merging across the MRO
+    and guards against accidental Pydantic field redefinition in
+    subclasses.
     """
-    ...
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        own = cls.__dict__.get('_property_aliases', {})
+
+        # Merge _property_aliases from all ancestors
+        merged = {}
+        for parent in reversed(cls.__mro__):
+            if parent is cls:
+                continue
+            parent_aliases = parent.__dict__.get(
+                '_property_aliases', {}
+            )
+            for key, val in parent_aliases.items():
+                if key in merged and merged[key] != val:
+                    raise TypeError(
+                        f"conflicting _property_aliases for "
+                        f"'{key}' in MRO of {cls.__name__}: "
+                        f"{merged[key]} vs {val}"
+                    )
+                merged[key] = val
+        for key, val in own.items():
+            if key in merged and merged[key] != val:
+                raise TypeError(
+                    f"conflicting _property_aliases for "
+                    f"'{key}' in {cls.__name__}: "
+                    f"parent defines {merged[key]}, "
+                    f"subclass redefines as {val}"
+                )
+            merged[key] = val
+        if merged:
+            cls._property_aliases = merged
+
+        # Guard against Pydantic field redefinition
+        own_annotations = cls.__dict__.get('__annotations__', {})
+        for field_name in own_annotations:
+            if field_name.startswith('_'):
+                continue
+            for parent in cls.__mro__[1:]:
+                parent_ann = parent.__dict__.get(
+                    '__annotations__', {}
+                )
+                if field_name in parent_ann:
+                    # Allow ClassVar redefinitions (description, etc.)
+                    ann_str = str(parent_ann[field_name])
+                    if 'ClassVar' in ann_str:
+                        continue
+                    raise TypeError(
+                        f"{cls.__name__} redefines field "
+                        f"'{field_name}' already defined in "
+                        f"{parent.__name__}"
+                    )
 
 
 class DocumentTypesBase(ClamsTypesBase):

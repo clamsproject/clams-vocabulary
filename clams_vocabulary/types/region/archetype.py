@@ -16,6 +16,6 @@ class Region(Annotation):
         None,
         description="Specifies which unit of time the measurement is based. Can be *seconds* or *milliseconds*, or "
                     "in case of annotations on a VideoDocument, *frames*. If not specified, *milliseconds* (in whole "
-                    "numbers) is assumed. <br><br> [note] This metadata is only relevant for time-based annotations. "
+                    "numbers) is assumed. <br><br> [note] This property is only relevant for time-based annotations. "
                     "[/note]"
     )
