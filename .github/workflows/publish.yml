@@ -88,9 +88,4 @@ jobs:
       source_repo: clamsproject/clams-vocabulary
       source_ref: ${{ needs.check-pypi.outputs.version }}
       project_name: vocabulary
-      version: ${{ needs.check-pypi.outputs.version }}
-      build_command: 'python3 build-tools/docs.py --output-dir docs'
-      docs_output_dir: 'docs'
-      python_version: '3.11'
-      update_latest: true
     secrets: inherit

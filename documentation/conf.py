@@ -4,9 +4,14 @@
 
 import datetime
 import inspect
+import json
+import logging
 import os
+import subprocess
 import sys
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -63,7 +68,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = ['_*']
+exclude_patterns = ['_*', 'whatsnew.md']
 source_suffix = ['.rst', '.md']
 
 # -- Options for HTML output ---------------------------------------------
@@ -142,3 +147,60 @@ def linkcode_resolve(domain, info):
     except Exception:
         # Don't fail the entire build if one link fails
         return None
+
+
+# -- What's New generation ------------------------------------------------
+
+def generate_whatsnew(app):
+    """
+    Generate whatsnew.md by fetching the latest release PR body
+    from GitHub via ``gh pr list``.
+
+    Falls back gracefully if ``gh`` is unavailable (local builds).
+    """
+    output_path = proj_root_dir / 'documentation' / 'whatsnew.md'
+    repo = repository_url.replace('https://github.com/', '')
+
+    try:
+        result = subprocess.run(
+            ['gh', 'pr', 'list',
+             '-s', 'merged', '-B', 'main',
+             '-L', '100',
+             '--json', 'title,body',
+             '--repo', repo],
+            capture_output=True, text=True, timeout=15,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(result.stderr)
+
+        prs = json.loads(result.stdout)
+        pr = next(
+            (p for p in prs
+             if p['title'].startswith('releasing ')),
+            None,
+        )
+        if pr is None:
+            raise RuntimeError("No release PR found")
+        title = pr['title']
+        body = pr.get('body', '')
+
+        with open(output_path, 'w') as f:
+            f.write(f"## {title}\n\n")
+            f.write(f"(Full changelog: "
+                    f"[CHANGELOG.md]"
+                    f"({blob_base_url}/main/CHANGELOG.md))\n\n")
+            if body:
+                f.write(body)
+        logger.info(f"Generated whatsnew.md from PR: {title}")
+
+    except Exception as e:
+        logger.warning(
+            f"Could not fetch release notes via gh: {e}. "
+            f"Writing empty whatsnew.md"
+        )
+        with open(output_path, 'w') as f:
+            f.write("")
+
+
+def setup(app):
+    app.connect('builder-inited', generate_whatsnew)

@@ -260,7 +260,7 @@ Example entry in `prop_aliases.py`:
 ### Standard Build Tasks
 
 1. `python build-tools/generate_vocab_snapshot.py build [TypeName ...]` — generates Python artifacts (`vX.py`, `__init__.py`) into `clams_vocabulary/`
-2. `python build-tools/docs.py [--output-dir <path>]` — generates RST/JSON into `documentation/` and builds HTML into `docs-test/` (or specified output dir)
+2. `python build-tools/docs.py [--output-dir <path>]` — generates RST/JSON into `documentation/` and builds HTML into `docs-test/` (or specified output dir). Accepts `--build-ver` for CLI compatibility with other SDK repos (ignored by this script).
 
 ### Documentation Artifacts
 
@@ -281,7 +281,7 @@ These files are **not version controlled** and are ignored by git via `documenta
 HTML documentation is built by Sphinx, configured in `documentation/conf.py`. You can invoke Sphinx directly (using `sphinx-xxx` commands), but it's recommended to use the `build-tools/docs.py` wrapper for convenience and consistency.
 
 > [!NOTE]
-> Per [clamsproject.github.io#11](https://github.com/clamsproject/clamsproject.github.io/issues/11), running `docs.py` and publishing to the project website will be automated via CI in the near future.
+> Documentation is automatically built and published to [clams.ai/vocabulary](https://clams.ai/vocabulary) by the `publish.yml` workflow when a version tag is pushed. The CI calls `docs.py --build-ver <version> --output-dir _docs` via the shared `sdk-docs.yml` workflow.
 
 ## Testing Your Changes
 
