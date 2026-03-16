@@ -2,6 +2,14 @@
 
 This guide provides detailed instructions for contributors to the CLAMS vocabulary repository.
 
+## Background: Vocabulary Migration
+
+Prior to 1.1.1 (until version 1.1.0), the CLAMS vocabulary was part of the [MMIF specification](https://mmif.clams.ai), shared the same version numbers, and was defined in a single YAML file (`clams.vocabulary.yaml` in the [mmif](https://github.com/clamsproject/mmif) repo). In that format, each type had separate "metadata" and "properties" sections.
+
+As of 1.1.1, the vocabulary is an independent Python package with its own versioning. Type definitions are now Pydantic models, and the old metadata/properties distinction is removed — all attributes are unified as regular fields on each type class. This is also a semantic decoupling: the vocabulary now defines type structure and semantics without reference to MMIF serialization details. How fields are distributed between `view.metadata.contains` and `annotation.properties` at serialization time is an MMIF spec and/or serialization SDK concern, not a vocabulary concern.
+
+See [mmif#230](https://github.com/clamsproject/mmif/issues/230) for the underlying discussion.
+
 ## Before Submitting a Pull Request
 
 Ensure the following checks pass:

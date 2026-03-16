@@ -78,6 +78,7 @@ $RECYCLE.BIN/
 
 **/__pycache__
 *.egg-info/
+dist/
 documentation/[0-9]*/
 documentation/type/
 docs-test/
