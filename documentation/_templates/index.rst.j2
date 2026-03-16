@@ -1,0 +1,32 @@
+CLAMS Vocabulary
+================
+
+The CLAMS Vocabulary is a controlled set of type definitions and enumerated
+values used in the Multi-Media Interchange Format (MMIF). It provides a
+single source of truth for annotation types, document types, and controlled
+vocabularies used across the CLAMS ecosystem.
+
+
+----
+
+Resources
+---------
+
+- `Version History <{{ changelog_url }}>`_ - changelog and type version evolution
+- `CONTRIBUTING guide <{{ repository_url }}/blob/main/CONTRIBUTING.md>`_ - how to add new types and submit changes
+
+----
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Contents
+
+{% for page in getting_started_pages %}
+  {{ page }}
+{% endfor %}
+
+.. toctree::
+  :maxdepth: 1
+  :caption: Vocabulary Items
+
+  {{ latest_vocab_version }}/index
