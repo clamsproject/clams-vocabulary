@@ -1,0 +1,31 @@
+{% if not is_latest %}
+:orphan:
+
+{% endif %}
+Type Hierarchy
+==============
+
+{% if is_latest %}
+.. note::
+   This is the **latest version** of the vocabulary ({{ vocab_version }}).
+
+{% else %}
+.. warning::
+   This is not the latest version. The latest version is :doc:`{{ latest_vocab }} <../{{ latest_vocab }}/index>`.
+
+{% endif %}
+This page shows the inheritance relationships and complete type index for
+CLAMS Vocabulary {{ vocab_version }}.
+
+{% if previous_vocab %}
+**Previous version:** :doc:`{{ previous_vocab }} <../{{ previous_vocab }}/index>`
+{% else %}
+**Previous version:** none *(this is the oldest version)*
+{% endif %}
+
+Inheritance Tree
+----------------
+
+.. inheritance-tree::
+
+{{ tree|indent(3, first=True) }}

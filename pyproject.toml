@@ -1,5 +1,48 @@
+[build-system]
+requires = ["setuptools>=61.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+
 [project]
 name = "clams-vocabulary"
+dynamic = ["version"]
+description = "MMIF Vocabulary Definitions"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pydantic>=2.0",
+]
 
 [project.urls]
+homepage = "https://github.com/clamsproject/clams-vocabulary"
+source = "https://github.com/clamsproject/clams-vocabulary"
+documentation = "https://clams.ai/vocabulary"
 type_prefix = "http://clams.ai/vocabulary/type"
+
+[project.optional-dependencies]
+dev = [
+    "GitPython",
+    "inflection",
+    "tomli; python_version < '3.11'",
+]
+docs = [
+    "sphinx",
+    "furo",
+    "m2r2",
+    "jinja2",
+    "tomli; python_version < '3.11'",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["clams_vocabulary*"]

@@ -5,7 +5,6 @@ from clams_vocabulary.types.polygon.archetype import Polygon
 
 class BoundingBox(Polygon):
     _property_aliases: ClassVar[dict] = {
-        'classification': {'classification', 'classifications'},
         'label': {'boxType', 'label'},
     }
 

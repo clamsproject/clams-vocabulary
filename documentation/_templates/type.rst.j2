@@ -1,0 +1,141 @@
+:orphan:
+
+{{ display_name }}
+{{ '=' * display_name|length }}
+
+{% if not is_latest %}
+.. warning::
+   This is not the latest version. The latest version is :doc:`v{{ latest_version }} <../v{{ latest_version }}/index>`.
+
+{% endif %}
+{% if previous_link %}
+- **Previous Version:** :doc:`v{{ previous_version }} <{{ previous_link }}>`
+{% else %}
+- **Previous Version:** none *(this is the oldest version)*
+{% endif %}
+- **URI:** `{{ uri }} <{{ uri }}>`_
+- **Shortname:** ``{{ shortname }}``
+{% if parent_class %}
+- **Inherits from:** :doc:{{ parent_class|type_link }}
+{% endif %}
+{% if included_in %}
+- **Included in:** {% for vocab_ver in included_in -%}
+  :doc:`{{ vocab_ver }} <../../../{{ vocab_ver }}/index>`
+  {%- if not loop.last %}, {% endif -%}
+  {%- endfor %}
+{% endif %}
+
+{% if alsoKnownAs %}
+- **Also Known As:** This type is also accessible at the following legacy URLs for backward compatibility:
+
+{% for url in alsoKnownAs %}
+  - `{{ url }} <{{ url }}>`_
+{% endfor %}
+{% endif %}
+{% if similarTo %}
+- **Similar Types:** This type is similar to the following types in other vocabularies:
+
+{% for url in similarTo %}
+  - `{{ url }} <{{ url }}>`_
+{% endfor %}
+{% endif %}
+
+Description
+-----------
+
+{{ description|rst_description }}
+
+{% if fields %}
+{% set native_fields = fields|selectattr('inherited_from', 'none')|list %}
+{% set inherited_fields = fields|rejectattr('inherited_from', 'none')|list %}
+{% set inherited_groups = inherited_fields|groupby('inherited_from')|sort(attribute='list.0.inheritance_depth') %}
+
+Properties
+----------
+
+Synopsis
+^^^^^^^^
+
+*Properties marked with* **\*** *are required.*
+
+.. list-table::
+   :header-rows: 1
+   :widths: 40 40 20
+   :align: left
+
+   * - Property
+     - Type
+     - Origin
+{% for field in fields %}
+   * - :ref:`{{ shortname }}-{{ version }}-{{ field.name }}`{%- if field.required %} **\***{% endif %}
+
+     - {{ field.json_type }}
+     - {% if field.inherited_from %}:doc:{{ field.inherited_from|type_link }}{% else %}*native*{% endif %}
+
+{% endfor %}
+
+{% if native_fields %}
+
+Native
+^^^^^^
+
+{% for field in native_fields %}
+
+.. _{{ shortname }}-{{ version }}-{{ field.name }}:
+
+``{{ field.name }}``
+{{ '"' * (field.name|length + 4) }}
+
+- type: *{{ field.json_type }}*
+- required: {% if field.required %}yes{% else %}no{% endif %}
+
+{% if field.default is not none %}
+- default: ``{{ field.default }}``
+{% endif %}
+{% if field.alias %}
+- alias: ``{{ field.alias }}``
+{% endif %}
+
+{{ field.description|rst_description }}
+
+.. raw:: html
+
+   <hr style="border: none; border-top: 1px solid var(--color-background-border);">
+
+{% endfor %}
+{% endif %}
+{% for origin, group_fields in inherited_groups %}
+
+Inherited from :doc:{{ origin|type_link }}
+{{ '^' * 100 }}
+
+{% for field in group_fields|list %}
+
+.. _{{ shortname }}-{{ version }}-{{ field.name }}:
+
+``{{ field.name }}``
+{{ '"' * (field.name|length + 4) }}
+
+- type: *{{ field.json_type }}*
+- required: {% if field.required %}yes{% else %}no{% endif %}
+
+{% if field.default is not none %}
+- default: ``{{ field.default }}``
+{% endif %}
+
+{{ field.description|rst_description }}
+
+.. raw:: html
+
+   <hr style="border: none; border-top: 1px solid var(--color-background-border);">
+
+{% endfor %}
+{% endfor %}
+{% endif %}
+
+JSON Schema
+-----------
+
+.. code-block:: json
+
+   {{ json_schema_str|indent(3) }}
