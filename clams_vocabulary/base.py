@@ -541,8 +541,17 @@ class AnnotationTypesBase(ClamsTypesBase):
                     )
 
 
-class DocumentTypesBase(ClamsTypesBase):
+class PrimaryTypesBase(ClamsTypesBase):
     """
-    Thin wrapper for "document" types as opposed to "annotation" types.
+    Thin wrapper for "primary" types (Document, Entity) as opposed to
+    "annotation" types. Primary types reference something outside the
+    MMIF (files, KB entries) and carry derivation links (origins).
+    """
+    ...
+
+
+class DocumentTypesBase(PrimaryTypesBase):
+    """
+    Thin wrapper for "document" types, a subcategory of primary types.
     """
     ...
