@@ -4,12 +4,6 @@ Build documentation for the clams-vocabulary project.
 This script is equivalent to:
     1. pip install -e .[docs]
     2. sphinx-build -b html -a -E documentation <output-dir>
-
-TODO: when adding a "What's New" section, fetch release
-notes from the merged release PR body via `gh pr list`
-instead of parsing CHANGELOG.md. See
-mmif-python/documentation/conf.py::generate_whatsnew_rst
-for implementation reference.
 """
 import argparse
 import shutil
@@ -72,10 +66,19 @@ def main():
         description="Build documentation for the clams-vocabulary project."
     )
     parser.add_argument(
+        "--build-ver",
+        metavar="<version>",
+        default=None,
+        help="Accepted for CLI compatibility with other SDK repos. "
+             "Ignored by this script (all versions are built in "
+             "a single pass)."
+    )
+    parser.add_argument(
         "--output-dir",
         metavar="<path>",
         default="docs-test",
-        help="The directory for documentation output (default: docs-test)."
+        help="The directory for documentation output "
+             "(default: docs-test)."
     )
     args = parser.parse_args()
 
