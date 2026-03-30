@@ -1,0 +1,17 @@
+name: "🧪 Test"
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+jobs:
+  test-and-codecov:
+    name: "🤙 Call SDK test workflow"
+    uses: clamsproject/.github/.github/workflows/sdk-codecov-pyproj.yml@main
+    secrets:
+      CC_REPO_UPLOAD_TOKEN: ${{ secrets.CODECOV_UPLOAD_TOKEN_CLAMS_VOCABULARY }}
