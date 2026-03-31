@@ -1,4 +1,22 @@
 
+## releasing 1.1.2 (2026-03-31)
+### Overview                                                                                                                                              
+Minor changes in CI/CD standardization and backward-compatibility prep for `mmif-python` vocabulary migration. 
+   
+### Additions                                                                                                                                             
+* `ThingType` namespace class (matches `AnnotationTypes`/`DocumentTypes` pattern)
+* `base_uri` is now a ClassVar on `ClamsTypesBase`
+* Test-on-PR workflow to match other SDK behaviors (`codecov.yml`)
+
+### Changes
+
+* Publishing workflow switched to shared reusable workflows (`sdk-publish-pyproj.yml`, `sdk-docs.yml`)
+* Standardized `build-tools/*.py` CLI interface
+* Sphinx docs generation bug fixes
+
+
+
+
 ## releasing 1.1.1 (2026-03-16)
 ### Overview
 
