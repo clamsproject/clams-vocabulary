@@ -358,9 +358,21 @@ class ClamsTypesBase(TypesBase, metaclass=ClamsTypesBaseMeta):
     """
     uri: ClassVar[str]
     version: ClassVar[str]
+    shortname: ClassVar[str]
+    base_uri: ClassVar[str] = ''
     description: ClassVar[str]
     alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = []
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if hasattr(cls, 'uri') and hasattr(cls, 'shortname'):
+            # derive base_uri: strip /{shortname}/{version} from uri
+            uri = cls.uri
+            short = cls.shortname
+            idx = uri.find(f'/{short}/')
+            if idx >= 0:
+                cls.base_uri = uri[:idx]
 
     model_config = ConfigDict(
         extra="allow",
