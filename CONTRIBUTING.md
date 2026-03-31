@@ -326,11 +326,12 @@ This repository follows the CLAMS project tagging convention:
 > [!IMPORTANT]
 > All `build-tools/` scripts must be run from the project root directory. Commands like `python -m build`, `pip install`, and `pytest` also expect the project root as CWD.
 
-1. Build package: `python build-tools/build.py` (runs codegen + sdist)
-2. Run tests: `python build-tools/test.py`
-3. Verify documentation locally (optional): `python build-tools/docs.py --output-dir docs-test`
-4. Commit, tag the release, and push: `git tag 1.3.0 && git push origin main && git push origin 1.3.0`
-5. Tag push triggers the `publish.yml` workflow which uploads to PyPI, generates CHANGELOG, and publishes docs
+1. Run codegen: `python build-tools/generate_vocab_snapshot.py build` (archetypes → versioned types)
+2. Build package: `python build-tools/build.py` (pip install + sdist/wheel, no codegen)
+3. Run tests: `python build-tools/test.py`
+4. Verify documentation locally (optional): `python build-tools/docs.py --output-dir docs-test`
+5. Commit all generated files, tag the release, and push: `git tag 1.3.0 && git push origin main && git push origin 1.3.0`
+6. Tag push triggers the `publish.yml` workflow which uploads to PyPI, generates CHANGELOG, and publishes docs
 
 ### URI Prefix Change Workflow
 
