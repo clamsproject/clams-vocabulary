@@ -362,31 +362,52 @@ class InitFileGenerator:
         for d in sorted(types_dir.iterdir()):
             if d.is_dir() and (d / "__init__.py").exists():
                 if info := ArchetypeLoader.read_archetype(d):
-                    info_map[info['name']] = {'dir': d.name, 'parent': info.get('parent')}
+                    info_map[info['name']] = {
+                        'dir': d.name,
+                        'parent': info.get('parent'),
+                    }
 
-        def is_doc(cls_name):
-            if cls_name == 'Document': return True
+        def descends_from(cls_name, ancestor):
+            if cls_name == ancestor:
+                return True
             p = info_map.get(cls_name, {}).get('parent')
-            return is_doc(p) if p and p != 'VocabType' else False
+            if p and p != 'VocabType':
+                return descends_from(p, ancestor)
+            return False
 
-        docs, anns = [], []
+        anns, primaries, docs = [], [], []
         for cls, meta in sorted(info_map.items()):
-            (docs if is_doc(cls) else anns).append((cls, meta['dir']))
-        return anns, docs
+            if descends_from(cls, 'Document'):
+                docs.append((cls, meta['dir']))
+            elif descends_from(cls, 'Primary'):
+                primaries.append((cls, meta['dir']))
+            else:
+                anns.append((cls, meta['dir']))
+        return anns, primaries, docs
 
     @staticmethod
     def generate_top_level_init(types_dir: Path, enums_dir: Path) -> str:
         lines = [AUTOGEN_WARNING]
-        ann_types, doc_types = InitFileGenerator._classify_types(types_dir)
-        
+        ann_types, primary_types, doc_types = (
+            InitFileGenerator._classify_types(types_dir)
+        )
+
+        categories = [
+            ('AnnotationTypes', ann_types),
+            ('PrimaryTypes', primary_types),
+            ('DocumentTypes', doc_types),
+        ]
+
         # Imports & Names Collection
-        all_cls = {'AnnotationTypes': [], 'DocumentTypes': []}
-        
-        for cat, t_list in [('AnnotationTypes', ann_types), ('DocumentTypes', doc_types)]:
+        all_cls = {cat: [] for cat, _ in categories}
+
+        for cat, t_list in categories:
             for cls, dname in t_list:
                 lines.append(f"from .types.{dname} import *\n")
                 vers = VersionManager.find_versions(types_dir / dname)
-                all_cls[cat].extend([f"{cls}_v{v}" for v in vers])
+                all_cls[cat].extend(
+                    [f"{cls}_v{v}" for v in vers]
+                )
                 all_cls[cat].append(cls)
 
         # Enums
@@ -394,46 +415,110 @@ class InitFileGenerator:
             for ed in sorted(enums_dir.iterdir()):
                 if ed.is_dir() and (ed / "__init__.py").exists():
                     if info := ArchetypeLoader.read_archetype(ed):
-                        lines.append(f"from .enums.{ed.name} import {info['name']}\n")
+                        lines.append(
+                            f"from .enums.{ed.name} "
+                            f"import {info['name']}\n"
+                        )
 
-        lines.append('\n\nclass AnnotationTypes:\n    """Namespace for all annotation types."""\n')
-        lines.append('    pass\n\n')
-
-        lines.append('class DocumentTypes:\n    """Namespace for all document types."""\n    pass\n\n')
-        lines.append('class Enums:\n    """Namespace for all controlled vocabularies."""\n    pass\n\n')
+        lines.append(
+            '\n\nclass AnnotationTypes:\n'
+            '    """Namespace for all annotation types."""\n'
+            '    pass\n\n'
+        )
+        lines.append(
+            'class PrimaryTypes:\n'
+            '    """Namespace for primary types '
+            '(non-annotation, non-document)."""\n'
+            '    pass\n\n'
+        )
+        lines.append(
+            'class DocumentTypes:\n'
+            '    """Namespace for all document types."""\n'
+            '    pass\n\n'
+        )
+        lines.append(
+            'class Enums:\n'
+            '    """Namespace for all controlled '
+            'vocabularies."""\n'
+            '    pass\n\n'
+        )
 
         # Populate Namespaces
-        for cat, classes in all_cls.items():
+        # PrimaryTypes includes DocumentTypes (Document descends
+        # from Primary), so merge both lists for that namespace.
+        ns_classes = dict(all_cls)
+        ns_classes['PrimaryTypes'] = (
+            all_cls['PrimaryTypes'] + all_cls['DocumentTypes']
+        )
+        for cat, classes in ns_classes.items():
             if classes:
-                lines.append(f"for _cls in [{', '.join(classes)}]:\n    setattr({cat}, _cls.__name__, _cls)\n\n")
+                lines.append(
+                    f"for _cls in [{', '.join(classes)}]:\n"
+                    f"    setattr({cat}, _cls.__name__, _cls)"
+                    f"\n\n"
+                )
 
-        # Aggregate property aliases from all types
-        lines.append('# Aggregate property aliases from type classes\n')
+        # Aggregate property aliases from annotation types
+        lines.append(
+            '# Aggregate property aliases from type classes\n'
+        )
         lines.append('AnnotationTypes._prop_aliases = {}\n')
         lines.append('for _attr in dir(AnnotationTypes):\n')
         lines.append('    if not _attr.startswith("_"):\n')
-        lines.append('        _cls = getattr(AnnotationTypes, _attr)\n')
-        lines.append('        if hasattr(_cls, "_property_aliases"):\n')
-        lines.append('            AnnotationTypes._prop_aliases[_cls.__name__] = _cls._property_aliases\n\n')
+        lines.append(
+            '        _cls = getattr(AnnotationTypes, _attr)\n'
+        )
+        lines.append(
+            '        if hasattr(_cls, "_property_aliases"):\n'
+        )
+        lines.append(
+            '            AnnotationTypes._prop_aliases'
+            '[_cls.__name__] = _cls._property_aliases\n\n'
+        )
 
         # Registries
-        for cat, t_list in [('AnnotationTypes', ann_types), ('DocumentTypes', doc_types)]:
+        for cat, t_list in categories:
             t_names = ', '.join(cls for cls, _ in t_list)
-            lines.append(f"{cat}._typevers = {{_t.shortname: _t.version for _t in [{t_names}]}}\n\n")
+            lines.append(
+                f"{cat}._typevers = {{_t.shortname: "
+                f"_t.version for _t in [{t_names}]}}\n\n"
+            )
 
         # URI Registry
-        all_types = all_cls['AnnotationTypes'] + all_cls['DocumentTypes']
+        all_types = []
+        for classes in all_cls.values():
+            all_types.extend(classes)
         if all_types:
             lines.append('URI_TO_TYPE = {}\n')
-            lines.append(f"for _type in [{', '.join(all_types)}]:\n")
+            lines.append(
+                f"for _type in [{', '.join(all_types)}]:\n"
+            )
             lines.append('    URI_TO_TYPE[_type.uri] = _type\n')
-            lines.append('    for aka in _type.alsoKnownAs:\n        URI_TO_TYPE[aka] = _type\n\n')
-            
-            lines.append('# Register prefixes\nfrom .base import TypesBase\n')
-            lines.append('for _type in URI_TO_TYPE.values():\n')
-            lines.append('    if _type.shortname not in TypesBase._prefixes:\n')
-            lines.append('        _prefix = TypesBase._create_prefix(_type.shortname, TypesBase._prefixes.values())\n')
-            lines.append('        TypesBase._prefixes[_type.shortname] = _prefix\n')
+            lines.append(
+                '    for aka in _type.alsoKnownAs:\n'
+                '        URI_TO_TYPE[aka] = _type\n\n'
+            )
+
+            lines.append(
+                '# Register prefixes\n'
+                'from .base import TypesBase\n'
+            )
+            lines.append(
+                'for _type in URI_TO_TYPE.values():\n'
+            )
+            lines.append(
+                '    if _type.shortname not in '
+                'TypesBase._prefixes:\n'
+            )
+            lines.append(
+                '        _prefix = TypesBase._create_prefix('
+                '_type.shortname, '
+                'TypesBase._prefixes.values())\n'
+            )
+            lines.append(
+                '        TypesBase._prefixes'
+                '[_type.shortname] = _prefix\n'
+            )
 
         return ''.join(lines)
 
