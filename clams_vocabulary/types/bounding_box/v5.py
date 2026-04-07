@@ -13,7 +13,6 @@ class BoundingBox_v5(Polygon_v5):
     shortname: ClassVar[str] = "BoundingBox"
 
     _property_aliases: ClassVar[dict] = {
-        'classification': {'classification', 'classifications'},
         'label': {'boxType', 'label'},
     }
 

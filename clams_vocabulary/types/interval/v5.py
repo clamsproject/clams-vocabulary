@@ -25,13 +25,13 @@ class Interval_v5(Region_v5):
     start: Optional[int] = Field(
         None,
         description="The starting offset in the primary data. This point is inclusive. For time intervals, the unit "
-                    "is determined by the *timeUnit* metadata key. For text intervals, the unit is Unicode code "
+                    "is determined by the *timeUnit* property. For text intervals, the unit is Unicode code "
                     "point."
     )
     end: Optional[int] = Field(
         None,
         description="The ending offset in the primary data. This point is exclusive. For time intervals, the unit is "
-                    "determined by the *timeUnit* metadata key. For text intervals, the unit is Unicode code point."
+                    "determined by the *timeUnit* property. For text intervals, the unit is Unicode code point."
     )
     targets: Optional[List[str]] = Field(
         None,

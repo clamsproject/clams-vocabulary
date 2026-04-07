@@ -13,7 +13,6 @@ class TimeFrame_v6(Interval_v5):
     shortname: ClassVar[str] = "TimeFrame"
 
     _property_aliases: ClassVar[dict] = {
-        'classification': {'classification', 'classifications'},
         'label': {'frameType', 'label'},
     }
 

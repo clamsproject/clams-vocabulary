@@ -26,13 +26,11 @@ class Alignment_v1(Thing_v1):
 
     sourceType: Optional[str] = Field(
         None,
-        description="The type of sources of the alignment. When an alignment starts from more that two source types, "
-                    "namely sources can be different types, one should not use this metadata."
+        description="The type of the source of the alignment."
     )
     targetType: Optional[str] = Field(
         None,
-        description="The type of targets of the alignment. When an alignment goes to more that two target types, "
-                    "namely targets can be different types, one should not use this metadata."
+        description="The type of the target of the alignment."
     )
 
     source: str = Field(..., description="The first of the aligned regions or documents.")
