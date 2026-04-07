@@ -1,4 +1,24 @@
 
+## releasing 1.1.3 (2026-04-07)
+### Overview
+
+Hotfix release: regenerate stale `vX.py` files whose descriptions were out of sync with archetypes since 1.1.1 (https://github.com/clamsproject/clams-vocabulary/issues/19).
+
+### Changes
+
+- Regenerated frozen `vX.py` files to match archetype descriptions, and hardened the publish workflow and developer checklist to prevent recurrence (https://github.com/clamsproject/clams-vocabulary/pull/20)
+
+
+## releasing 1.1.3 (2026-04-07)
+### Overview
+
+Hotfix release: regenerate stale `vX.py` files whose descriptions were out of sync with archetypes since 1.1.1 (https://github.com/clamsproject/clams-vocabulary/issues/19).
+
+### Changes
+
+- Regenerated frozen `vX.py` files to match archetype descriptions, and hardened the publish workflow and developer checklist to prevent recurrence (https://github.com/clamsproject/clams-vocabulary/pull/20)
+
+
 ## releasing 1.1.2 (2026-03-31)
 ### Overview                                                                                                                                              
 Minor changes in CI/CD standardization and backward-compatibility prep for `mmif-python` vocabulary migration. 
