@@ -32,17 +32,37 @@ jobs:
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
 
+  codegen-check:
+    name: "🔍 Verify codegen is up to date"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install -e .[dev]
+      - run: python3 build-tools/generate_vocab_snapshot.py build --reuse-version-number
+      - name: Fail if codegen drift detected
+        run: |
+          if ! git diff --exit-code -- 'clams_vocabulary/'; then
+            echo "::error::Generated files don't match archetypes. Run codegen locally and commit."
+            exit 1
+          fi
+
   publish-pypi:
     name: "📦 Build and upload to PyPI"
-    needs: check-pypi
+    needs: [check-pypi, codegen-check]
     if: needs.check-pypi.outputs.exists == 'false'
     uses: clamsproject/.github/.github/workflows/sdk-publish-pyproj.yml@main
     secrets: inherit
 
   publish-docs:
     name: "📖 Build and publish docs"
-    needs: [check-pypi, publish-pypi]
-    if: always() && needs.check-pypi.result == 'success' && needs.publish-pypi.result != 'failure'
+    needs: [check-pypi, codegen-check, publish-pypi]
+    if: always() && needs.codegen-check.result == 'success' && needs.check-pypi.result == 'success' && needs.publish-pypi.result != 'failure'
     uses: clamsproject/clamsproject.github.io/.github/workflows/sdk-docs.yml@main
     with:
       source_repo: clamsproject/clams-vocabulary
