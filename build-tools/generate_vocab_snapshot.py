@@ -362,27 +362,41 @@ class InitFileGenerator:
         for d in sorted(types_dir.iterdir()):
             if d.is_dir() and (d / "__init__.py").exists():
                 if info := ArchetypeLoader.read_archetype(d):
-                    info_map[info['name']] = {'dir': d.name, 'parent': info.get('parent')}
+                    info_map[info['name']] = {
+                        'dir': d.name,
+                        'parent': info.get('parent'),
+                    }
 
         def is_doc(cls_name):
-            if cls_name == 'Document': return True
+            if cls_name == 'Document':
+                return True
             p = info_map.get(cls_name, {}).get('parent')
             return is_doc(p) if p and p != 'VocabType' else False
 
-        docs, anns = [], []
+        things, docs, anns = [], [], []
         for cls, meta in sorted(info_map.items()):
-            (docs if is_doc(cls) else anns).append((cls, meta['dir']))
-        return anns, docs
+            if cls == 'Thing':
+                things.append((cls, meta['dir']))
+            elif is_doc(cls):
+                docs.append((cls, meta['dir']))
+            else:
+                anns.append((cls, meta['dir']))
+        return things, anns, docs
 
     @staticmethod
     def generate_top_level_init(types_dir: Path, enums_dir: Path) -> str:
         lines = [AUTOGEN_WARNING]
-        ann_types, doc_types = InitFileGenerator._classify_types(types_dir)
-        
+        thing_types, ann_types, doc_types = \
+            InitFileGenerator._classify_types(types_dir)
+
         # Imports & Names Collection
-        all_cls = {'AnnotationTypes': [], 'DocumentTypes': []}
-        
-        for cat, t_list in [('AnnotationTypes', ann_types), ('DocumentTypes', doc_types)]:
+        all_cls = {
+            'ThingType': [], 'AnnotationTypes': [], 'DocumentTypes': [],
+        }
+
+        for cat, t_list in [('ThingType', thing_types),
+                            ('AnnotationTypes', ann_types),
+                            ('DocumentTypes', doc_types)]:
             for cls, dname in t_list:
                 lines.append(f"from .types.{dname} import *\n")
                 vers = VersionManager.find_versions(types_dir / dname)
@@ -400,6 +414,9 @@ class InitFileGenerator:
         lines.append('    pass\n\n')
 
         lines.append('class DocumentTypes:\n    """Namespace for all document types."""\n    pass\n\n')
+
+        lines.append('class ThingType:\n    """Namespace for the top-level Thing type. (for backwards compatibility)"""\n    pass\n\n')
+
         lines.append('class Enums:\n    """Namespace for all controlled vocabularies."""\n    pass\n\n')
 
         # Populate Namespaces
@@ -417,12 +434,16 @@ class InitFileGenerator:
         lines.append('            AnnotationTypes._prop_aliases[_cls.__name__] = _cls._property_aliases\n\n')
 
         # Registries
-        for cat, t_list in [('AnnotationTypes', ann_types), ('DocumentTypes', doc_types)]:
+        for cat, t_list in [('ThingType', thing_types),
+                            ('AnnotationTypes', ann_types),
+                            ('DocumentTypes', doc_types)]:
             t_names = ', '.join(cls for cls, _ in t_list)
             lines.append(f"{cat}._typevers = {{_t.shortname: _t.version for _t in [{t_names}]}}\n\n")
 
         # URI Registry
-        all_types = all_cls['AnnotationTypes'] + all_cls['DocumentTypes']
+        all_types = (all_cls['ThingType']
+                     + all_cls['AnnotationTypes']
+                     + all_cls['DocumentTypes'])
         if all_types:
             lines.append('URI_TO_TYPE = {}\n')
             lines.append(f"for _type in [{', '.join(all_types)}]:\n")
