@@ -14,12 +14,16 @@ See [mmif#230](https://github.com/clamsproject/mmif/issues/230) for the underlyi
 
 Ensure the following checks pass:
 
-0. Make your changes to type archetypes (`archetype.py` files) ([details](#develop-anchor))
-1. Commit all archetype changes and new `vX.py` files
-2. `python build-tools/generate_vocab_snapshot.py build` completes without errors ([detail](#build-anchor))
-3. `python build-tools/docs.py` completes without errors, manual inspection of generated HTML
-4. `python -m pytest tests/` shows no failures
-5. Submit a pull request with your changes
+1. Make your changes to type archetypes (`archetype.py` files) ([details](#develop-anchor))
+1. `python build-tools/generate_vocab_snapshot.py build` completes without errors ([details](#build-anchor))
+1. `python -m pytest tests/` shows no failures
+1. `python build-tools/docs.py` completes without errors, manual inspection of generated HTML
+   - DO NOT commit generated documentation files; documentation generation will be handled by the CI workflow and published separately from code changes
+1. Commit all archetype changes **and** the generated `vX.py` and `__init__.py` files together
+1. Submit a pull request with your changes
+
+> [!IMPORTANT]
+> The CI publish workflow includes a `codegen-check` job that regenerates all types and verifies the output matches what is committed. If you forget to commit regenerated files, the release will be blocked.
 
 ## Coding Conventions
 
