@@ -78,8 +78,13 @@ $RECYCLE.BIN/
 
 **/__pycache__
 *.egg-info/
+.coverage
+coverage.xml
 dist/
 documentation/[0-9]*/
 documentation/type/
+documentation/dev/
+documentation/index.rst
+documentation/whatsnew.md
 docs-test/
 .type_vocab_index.json
