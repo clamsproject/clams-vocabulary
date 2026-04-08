@@ -25,6 +25,7 @@
 # Icon must end with two \r
 Icon
 
+
 # Thumbnails
 ._*
 
@@ -78,13 +79,22 @@ $RECYCLE.BIN/
 
 **/__pycache__
 *.egg-info/
-.coverage
-coverage.xml
 dist/
+
+# generated version-specific documentation files
 documentation/[0-9]*/
-documentation/type/
 documentation/dev/
-documentation/index.rst
+
+# documentation for release time
+documentation/type/
 documentation/whatsnew.md
+documentation/index.rst
+
 docs-test/
 .type_vocab_index.json
+
+# codecov files 
+.coverage
+coverage.xml
+
+_issues

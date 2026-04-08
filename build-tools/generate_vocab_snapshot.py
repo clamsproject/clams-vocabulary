@@ -240,6 +240,7 @@ class ArchetypeLoader:
             'shortname': None,
             'description': None,
             'parent': None,
+            'alsoKnownAs': [],
             'properties': {}
         }
 
@@ -256,12 +257,25 @@ class ArchetypeLoader:
                 fid = item.target.id
                 if fid in ('shortname', 'description'):
                     info[fid] = ArchetypeLoader._extract_value(item.value)
+                elif fid == 'alsoKnownAs':
+                    info['alsoKnownAs'] = ArchetypeLoader._extract_list(item.value)
                 elif fid not in ('uri', 'version'):
                     if field_info := ArchetypeLoader._extract_field_info(item):
                         info['properties'][fid] = field_info
 
         info['shortname'] = info['shortname'] or re.sub(r'_v\d+$', '', node.name)
         return info if info['description'] else None
+
+    @staticmethod
+    def _extract_list(node: ast.AST) -> List[str]:
+        """Extract a list of string literals from an AST node."""
+        if isinstance(node, ast.List):
+            return [
+                elt.value for elt in node.elts
+                if isinstance(elt, ast.Constant)
+                and isinstance(elt.value, str)
+            ]
+        return []
 
     @staticmethod
     def _extract_value(node: ast.AST) -> Any:
@@ -292,6 +306,34 @@ class ArchetypeLoader:
                      if k.arg == 'description'), '')
         
         return {'type': ast.unparse(node.annotation), 'description': desc, 'required': required}
+
+    @staticmethod
+    def metadata_matches(
+        archetype_info: Dict[str, Any],
+        frozen_info: Dict[str, Any],
+    ) -> bool:
+        """
+        Compare archetype metadata against frozen vX.py metadata.
+
+        :returns: True if semantically equivalent (no new version needed)
+        """
+        def strip_ver(name):
+            return re.sub(r'_v\d+$', '', name) if name else name
+
+        if archetype_info['shortname'] != frozen_info['shortname']:
+            return False
+        if archetype_info['description'] != frozen_info['description']:
+            return False
+        if strip_ver(archetype_info.get('parent')) \
+                != strip_ver(frozen_info.get('parent')):
+            return False
+        if sorted(archetype_info.get('alsoKnownAs', [])) \
+                != sorted(frozen_info.get('alsoKnownAs', [])):
+            return False
+        if archetype_info.get('properties', {}) \
+                != frozen_info.get('properties', {}):
+            return False
+        return True
 
 
 # CODE GENERATION
@@ -386,6 +428,8 @@ class InitFileGenerator:
     @staticmethod
     def generate_top_level_init(types_dir: Path, enums_dir: Path) -> str:
         lines = [AUTOGEN_WARNING]
+        lines.append('from importlib.metadata import version\n')
+        lines.append('__version__ = version("clams-vocabulary")\n\n')
         thing_types, ann_types, doc_types = \
             InitFileGenerator._classify_types(types_dir)
 
@@ -460,7 +504,11 @@ class InitFileGenerator:
 
 
 # BUILD ORCHESTRATION
+_warning_count = 0
+
+
 def build_type(type_dir: Path, reuse_version: bool = False) -> bool:
+    global _warning_count
     print(f" Building type: {type_dir.name}, from dir: {type_dir}")
     if not (info := ArchetypeLoader.read_archetype(type_dir)):
         print(f"  ✗ No archetype found")
@@ -475,11 +523,60 @@ def build_type(type_dir: Path, reuse_version: bool = False) -> bool:
     elif reuse_version:
         ver = latest
         print(f"  → Regenerating v{ver}")
-    elif GitUtils.is_modified(type_dir / "archetype.py") or not GitUtils.is_tracked(type_dir / "archetype.py"):
-        ver = latest + 1
-        print(f"  → Generating v{ver} (changes detected)")
     else:
-        print(f"  ✓ No changes (current: v{latest})")
+        frozen_file = type_dir / f"v{latest}.py"
+        frozen_info = (ArchetypeLoader.read_archetype(frozen_file)
+                       if frozen_file.exists() else None)
+        if (frozen_info is None
+                or not ArchetypeLoader.metadata_matches(
+                    info, frozen_info)):
+            ver = latest + 1
+            print(f"  → Generating v{ver} (changes detected)")
+        else:
+            # Check if parent version advanced
+            parent = info.get('parent')
+            if parent and parent not in ('ClamsTypesBase', 'VocabType'):
+                p_dir = type_dir.parent / inflection.underscore(parent)
+                current_parent_ver = \
+                    VersionManager.get_latest_version(p_dir)
+                if current_parent_ver:
+                    frozen_src = frozen_file.read_text()
+                    m = re.search(
+                        rf'from .+\.v(\d+) import {parent}_v\d+',
+                        frozen_src
+                    )
+                    frozen_parent_ver = (int(m.group(1))
+                                         if m else None)
+                    if (frozen_parent_ver
+                            and frozen_parent_ver
+                            < current_parent_ver):
+                        ver = latest + 1
+                        print(
+                            f"  → Generating v{ver} "
+                            f"(parent {parent} changed: "
+                            f"v{frozen_parent_ver} → "
+                            f"v{current_parent_ver})"
+                        )
+
+        if ver is None:
+            print(f"  ✓ No changes (current: v{latest})")
+
+    if ver and latest and ver > latest and info.get('alsoKnownAs'):
+        frozen_file = type_dir / f"v{latest}.py"
+        if frozen_file.exists():
+            frozen_info = ArchetypeLoader.read_archetype(frozen_file)
+            if frozen_info:
+                frozen_aka = set(frozen_info.get('alsoKnownAs', []))
+                cur_aka = set(info.get('alsoKnownAs', []))
+                stale = cur_aka & frozen_aka
+                if stale:
+                    _warning_count += 1
+                    print(f"  ⚠ WARNING: archetype alsoKnownAs overlaps "
+                          f"with v{latest} — these URIs already belong "
+                          f"to the frozen version. Consider clearing "
+                          f"alsoKnownAs in archetype.py:")
+                    for uri in sorted(stale):
+                        print(f"    - {uri}")
 
     if ver:
         try:
@@ -546,7 +643,11 @@ def _run_build(type_names: Optional[List[str]], reuse: bool) -> int:
     )
     
     success = sum(results.values())
-    print(f"\nResults: {success} built, {len(results) - success} errors")
+    errors = len(results) - success
+    parts = [f"{success} built", f"{errors} errors"]
+    if _warning_count:
+        parts.append(f"{_warning_count} warnings")
+    print(f"\nResults: {', '.join(parts)}")
     return 0 if all(results.values()) else 1
 
 

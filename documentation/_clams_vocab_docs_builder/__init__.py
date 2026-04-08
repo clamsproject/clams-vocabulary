@@ -247,11 +247,21 @@ def generate_all_rst(
             )
             generated_count += 1
 
-    # Generate index page
-    if latest_vocab_version:
-        print("\nGenerating index.rst...")
-        generate_index_rst(repo_dir, output_dir, template_env,
-                          latest_vocab_version)
+    # Always generate a "dev" hierarchy from current working tree
+    if latest_types:
+        prev_vocab = latest_vocab_version
+        generate_hierarchy_rst(
+            latest_types, output_dir, 'dev',
+            template_env, types_dir,
+            is_latest=True,
+            previous_vocab=prev_vocab,
+            latest_vocab='dev'
+        )
+        generated_count += 1
+
+    # Generate index page (use "dev" as the active version)
+    print("\nGenerating index.rst...")
+    generate_index_rst(repo_dir, output_dir, template_env, 'dev')
 
     print("\n" + "=" * 70)
     print("RST generation complete!")
