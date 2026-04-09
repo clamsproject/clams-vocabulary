@@ -3,9 +3,8 @@
 Build and maintenance tool for CLAMS Vocabulary.
 
 Usage:
-    python build.py build [types...]              # Build all or specific types
-    python build.py build --reuse-version-number  # Republish with same version
-    python build.py clean                         # Clean generated files
+    python build-tools/generate_vocab_snapshot.py build [types...]
+    python build-tools/generate_vocab_snapshot.py clean
 """
 
 import argparse
@@ -13,6 +12,7 @@ import ast
 import re
 import shutil
 import sys
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -40,6 +40,23 @@ AUTOGEN_WARNING = (
     'This file should never be manually modified, and must stay FROZEN.\n'
     '"""\n'
 )
+
+
+@dataclass
+class PropertyInfo:
+    type_name: str
+    description: str
+    required: bool
+
+
+@dataclass
+class ArchetypeInfo:
+    name: str
+    shortname: str
+    description: str
+    parent: Optional[str]
+    also_known_as: List[str] = field(default_factory=list)
+    properties: Dict[str, PropertyInfo] = field(default_factory=dict)
 
 
 # CONFIGURATION
@@ -134,6 +151,29 @@ class GitUtils:
         repo = _get_git_repo()
         repo.git.checkout('HEAD', str(path))
 
+    @staticmethod
+    @lru_cache(maxsize=1)
+    def latest_tag() -> Optional[str]:
+        """Find the latest semver tag in the repo."""
+        repo = _get_git_repo()
+        try:
+            tags = repo.git.tag(
+                '--sort=-version:refname', '--list', '[0-9]*'
+            ).strip()
+            return tags.split('\n')[0] if tags else None
+        except git.GitCommandError:
+            return None
+
+    @staticmethod
+    def file_at_tag(tag: str, path: Path) -> Optional[str]:
+        """Get file contents at a specific git tag."""
+        repo = _get_git_repo()
+        rel = path.relative_to(_get_project_root())
+        try:
+            return repo.git.show(f'{tag}:{rel}')
+        except git.GitCommandError:
+            return None
+
 
 def smart_clean(path: Path, verbose: bool = True) -> bool:
     """Delete if untracked, restore if modified. Return True if action taken."""
@@ -216,14 +256,18 @@ class VersionManager:
 class ArchetypeLoader:
     @staticmethod
     @lru_cache(maxsize=None)
-    def read_archetype(type_dir: Path) -> Optional[Dict[str, Any]]:
+    def read_archetype(type_dir: Path) -> Optional[ArchetypeInfo]:
         """Load archetype.py or vX.py and extract its structure."""
         src = type_dir if (type_dir.is_file() and type_dir.name.startswith('v')) else type_dir / "archetype.py"
         if not src.exists():
             return None
+        return ArchetypeLoader.parse_source(src.read_text())
 
+    @staticmethod
+    def parse_source(source: str) -> Optional[ArchetypeInfo]:
+        """Parse Python source and extract class structure."""
         try:
-            tree = ast.parse(src.read_text())
+            tree = ast.parse(source)
         except SyntaxError:
             return None
 
@@ -234,50 +278,91 @@ class ArchetypeLoader:
         return None
 
     @staticmethod
-    def _extract_class_info(node: ast.ClassDef) -> Optional[Dict[str, Any]]:
-        info = {
-            'name': node.name,
-            'shortname': None,
-            'description': None,
-            'parent': None,
-            'properties': {}
-        }
+    def _extract_class_info(node: ast.ClassDef) -> Optional[ArchetypeInfo]:
+        shortname = None
+        description = None
+        parent = None
+        also_known_as: List[str] = []
+        properties: Dict[str, PropertyInfo] = {}
 
         if node.bases:
             base = node.bases[0]
-            info['parent'] = base.id if isinstance(base, ast.Name) else base.attr
+            if isinstance(base, ast.Name):
+                parent = base.id
+            elif isinstance(base, ast.Attribute):
+                parent = base.attr
 
         for item in node.body:
             if isinstance(item, ast.Assign) and len(item.targets) == 1:
                 target = item.targets[0]
                 if isinstance(target, ast.Name) and target.id in ('shortname', 'description'):
-                    info[target.id] = ArchetypeLoader._extract_value(item.value)
+                    value = ArchetypeLoader._extract_value(item.value)
+                    if target.id == 'shortname':
+                        shortname = value
+                    else:
+                        description = value
             elif isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
                 fid = item.target.id
-                if fid in ('shortname', 'description'):
-                    info[fid] = ArchetypeLoader._extract_value(item.value)
+                if fid in ('shortname', 'description') and item.value is not None:
+                    value = ArchetypeLoader._extract_value(item.value)
+                    if fid == 'shortname':
+                        shortname = value
+                    else:
+                        description = value
+                elif fid == 'alsoKnownAs' and item.value is not None:
+                    also_known_as = ArchetypeLoader._extract_list(item.value)
                 elif fid not in ('uri', 'version'):
                     if field_info := ArchetypeLoader._extract_field_info(item):
-                        info['properties'][fid] = field_info
+                        properties[fid] = field_info
 
-        info['shortname'] = info['shortname'] or re.sub(r'_v\d+$', '', node.name)
-        return info if info['description'] else None
+        shortname = shortname or re.sub(r'_v\d+$', '', node.name)
+        if not description:
+            return None
+
+        return ArchetypeInfo(
+            name=node.name,
+            shortname=shortname,
+            description=description,
+            parent=parent,
+            also_known_as=also_known_as,
+            properties=properties,
+        )
+
+    @staticmethod
+    def _extract_list(node: ast.AST) -> List[str]:
+        """Extract a list of string literals from an AST node."""
+        if isinstance(node, ast.List):
+            return [
+                elt.value for elt in node.elts
+                if isinstance(elt, ast.Constant)
+                and isinstance(elt.value, str)
+            ]
+        return []
 
     @staticmethod
     def _extract_value(node: ast.AST) -> Any:
         if isinstance(node, ast.Constant):
             return node.value
-        if isinstance(node, ast.Str):
-            return node.s
-        if isinstance(node, (ast.Tuple, ast.JoinedStr)):
-            vals = node.elts if isinstance(node, ast.Tuple) else node.values
-            parts = [ArchetypeLoader._extract_value(v) for v in vals 
-                     if isinstance(v, (ast.Constant, ast.Str))]
-            return (' ' if isinstance(node, ast.Tuple) else '').join(parts)
+        if isinstance(node, ast.Tuple):
+            parts = [
+                ArchetypeLoader._extract_value(v)
+                for v in node.elts
+                if isinstance(v, ast.Constant)
+                and isinstance(v.value, str)
+            ]
+            return ' '.join(parts)
+        if isinstance(node, ast.JoinedStr):
+            parts = [
+                ArchetypeLoader._extract_value(v)
+                for v in node.values
+                if isinstance(v, ast.Constant)
+                and isinstance(v.value, str)
+            ]
+            return ''.join(parts)
         return None
 
     @staticmethod
-    def _extract_field_info(node: ast.AnnAssign) -> Optional[Dict[str, Any]]:
+    def _extract_field_info(node: ast.AnnAssign) -> Optional[PropertyInfo]:
         if not (node.value and isinstance(node.value, ast.Call)):
             return None
         call = node.value
@@ -290,8 +375,38 @@ class ArchetypeLoader:
 
         desc = next((ArchetypeLoader._extract_value(k.value) for k in call.keywords 
                      if k.arg == 'description'), '')
-        
-        return {'type': ast.unparse(node.annotation), 'description': desc, 'required': required}
+
+        return PropertyInfo(
+            type_name=ast.unparse(node.annotation),
+            description=desc,
+            required=required,
+        )
+
+    @staticmethod
+    def metadata_matches(
+        archetype_info: ArchetypeInfo,
+        frozen_info: ArchetypeInfo,
+    ) -> bool:
+        """
+        Compare archetype metadata against frozen vX.py metadata.
+
+        :returns: True if semantically equivalent (no new version needed)
+        """
+        def strip_ver(name):
+            return re.sub(r'_v\d+$', '', name) if name else name
+
+        if archetype_info.shortname != frozen_info.shortname:
+            return False
+        if archetype_info.description != frozen_info.description:
+            return False
+        if strip_ver(archetype_info.parent) != strip_ver(frozen_info.parent):
+            return False
+        if sorted(archetype_info.also_known_as) \
+                != sorted(frozen_info.also_known_as):
+            return False
+        if archetype_info.properties != frozen_info.properties:
+            return False
+        return True
 
 
 # CODE GENERATION
@@ -306,8 +421,8 @@ class VersionedCodeGenerator:
         content = self._versionstamp_class(content, info, version_num, type_dir)
         return content
 
-    def _versionstamp_imports(self, content: str, info: Dict[str, Any], type_dir: Path) -> str:
-        parent = info.get('parent')
+    def _versionstamp_imports(self, content: str, info: ArchetypeInfo, type_dir: Path) -> str:
+        parent = info.parent
         if parent and parent != 'VocabType':
             p_ver = self._get_parent_version(parent, type_dir)
             p_snake = inflection.underscore(parent)
@@ -316,9 +431,10 @@ class VersionedCodeGenerator:
             content = re.sub(pat, rep, content)
         return content
 
-    def _versionstamp_class(self, content: str, info: Dict[str, Any], version_num: int, type_dir: Path) -> str:
-        name, parent = info['name'], info.get('parent', 'ClamsTypesBase')
-        uri = f"{get_full_uri_prefix()}/{info['shortname']}/v{version_num}"
+    def _versionstamp_class(self, content: str, info: ArchetypeInfo, version_num: int, type_dir: Path) -> str:
+        name = info.name
+        parent = info.parent or 'ClamsTypesBase'
+        uri = f"{get_full_uri_prefix()}/{info.shortname}/v{version_num}"
         
         # Replace class definition
         if parent == 'ClamsTypesBase':
@@ -332,7 +448,7 @@ class VersionedCodeGenerator:
         # Add ClassVars
         attrs = (f'    uri: ClassVar[str] = "{uri}"\n'
                  f'    version: ClassVar[str] = "v{version_num}"\n'
-                 f'    shortname: ClassVar[str] = "{info["shortname"]}"\n')
+                 f'    shortname: ClassVar[str] = "{info.shortname}"\n')
         
         return re.sub(rf'(class {name}_v{version_num}.*?:)', lambda m: m.group(1) + '\n' + attrs, content)
 
@@ -362,9 +478,9 @@ class InitFileGenerator:
         for d in sorted(types_dir.iterdir()):
             if d.is_dir() and (d / "__init__.py").exists():
                 if info := ArchetypeLoader.read_archetype(d):
-                    info_map[info['name']] = {
+                    info_map[info.name] = {
                         'dir': d.name,
-                        'parent': info.get('parent'),
+                        'parent': info.parent,
                     }
 
         def is_doc(cls_name):
@@ -386,6 +502,8 @@ class InitFileGenerator:
     @staticmethod
     def generate_top_level_init(types_dir: Path, enums_dir: Path) -> str:
         lines = [AUTOGEN_WARNING]
+        lines.append('from importlib.metadata import version\n')
+        lines.append('__version__ = version("clams-vocabulary")\n\n')
         thing_types, ann_types, doc_types = \
             InitFileGenerator._classify_types(types_dir)
 
@@ -408,7 +526,7 @@ class InitFileGenerator:
             for ed in sorted(enums_dir.iterdir()):
                 if ed.is_dir() and (ed / "__init__.py").exists():
                     if info := ArchetypeLoader.read_archetype(ed):
-                        lines.append(f"from .enums.{ed.name} import {info['name']}\n")
+                        lines.append(f"from .enums.{ed.name} import {info.name}\n")
 
         lines.append('\n\nclass AnnotationTypes:\n    """Namespace for all annotation types."""\n')
         lines.append('    pass\n\n')
@@ -460,30 +578,155 @@ class InitFileGenerator:
 
 
 # BUILD ORCHESTRATION
-def build_type(type_dir: Path, reuse_version: bool = False) -> bool:
+_warning_count = 0
+
+
+def _get_tagged_info(type_dir: Path) -> Optional[ArchetypeInfo]:
+    """Get archetype info at the latest git tag. Returns None if
+    no tag exists or the type didn't exist at that tag."""
+    tag = GitUtils.latest_tag()
+    if not tag:
+        return None
+    src = GitUtils.file_at_tag(
+        tag, type_dir / "archetype.py"
+    )
+    if not src:
+        return None
+    return ArchetypeLoader.parse_source(src)
+
+
+def _get_tagged_latest_version(type_dir: Path) -> Optional[int]:
+    """Get the latest type version that existed at the last tag."""
+    tag = GitUtils.latest_tag()
+    if not tag:
+        return None
+    init_src = GitUtils.file_at_tag(
+        tag, type_dir / "__init__.py"
+    )
+    if not init_src:
+        return None
+    versions = [
+        int(m.group(1))
+        for m in re.finditer(r'from \.v(\d+) import', init_src)
+    ]
+    return max(versions) if versions else None
+
+
+def _uri_prefix_changed(type_dir: Path, tagged_ver: int) -> bool:
+    """Check if URI prefix in pyproject.toml changed since the
+    tagged version."""
+    frozen_file = type_dir / f"v{tagged_ver}.py"
+    if not frozen_file.exists():
+        return False
+    frozen_src = frozen_file.read_text()
+    m = re.search(r'uri: ClassVar\[str\] = "(.+)"', frozen_src)
+    if not m:
+        return False
+    frozen_uri = m.group(1)
+    frozen_info = ArchetypeLoader.read_archetype(frozen_file)
+    if not frozen_info:
+        return False
+    current_prefix = get_full_uri_prefix()
+    expected_uri = (
+        f"{current_prefix}/{frozen_info.shortname}"
+        f"/v{tagged_ver}"
+    )
+    return frozen_uri != expected_uri
+
+
+def _parent_version_advanced(
+    type_dir: Path, info: ArchetypeInfo, tagged_ver: int
+) -> bool:
+    """Check if parent type's version advanced since the tagged
+    version."""
+    parent = info.parent
+    if not parent or parent in ('ClamsTypesBase', 'VocabType'):
+        return False
+    p_dir = type_dir.parent / inflection.underscore(parent)
+    current_parent_ver = VersionManager.get_latest_version(p_dir)
+    tagged_file = type_dir / f"v{tagged_ver}.py"
+    if not (current_parent_ver and tagged_file.exists()):
+        return False
+    frozen_src = tagged_file.read_text()
+    m = re.search(
+        rf'from .+\.v(\d+) import {parent}_v\d+', frozen_src
+    )
+    frozen_parent_ver = int(m.group(1)) if m else None
+    return bool(
+        frozen_parent_ver
+        and frozen_parent_ver < current_parent_ver
+    )
+
+
+def build_type(type_dir: Path) -> bool:
+    global _warning_count
     print(f" Building type: {type_dir.name}, from dir: {type_dir}")
     if not (info := ArchetypeLoader.read_archetype(type_dir)):
-        print(f"  ✗ No archetype found")
+        print("  ✗ No archetype found")
         return False
 
-    latest = VersionManager.get_latest_version(type_dir)
+    tagged_ver = _get_tagged_latest_version(type_dir)
     ver = None
 
-    if latest is None:
+    if tagged_ver is None:
+        # Type not at last tag (or no tags) → new type
         ver = 2 if type_dir.name == 'annotation' else 1
         print(f"  → Generating v{ver} (new)")
-    elif reuse_version:
-        ver = latest
-        print(f"  → Regenerating v{ver}")
-    elif GitUtils.is_modified(type_dir / "archetype.py") or not GitUtils.is_tracked(type_dir / "archetype.py"):
-        ver = latest + 1
-        print(f"  → Generating v{ver} (changes detected)")
     else:
-        print(f"  ✓ No changes (current: v{latest})")
+        frozen_file = type_dir / f"v{tagged_ver}.py"
+        frozen_info = (
+            ArchetypeLoader.read_archetype(frozen_file)
+            if frozen_file.exists() else None
+        )
+        if (frozen_info is None
+                or not ArchetypeLoader.metadata_matches(
+                    info, frozen_info)):
+            ver = tagged_ver + 1
+            print(f"  → Generating v{ver} (changes detected)")
+        elif _uri_prefix_changed(type_dir, tagged_ver):
+            ver = tagged_ver + 1
+            print(f"  → Generating v{ver} (URI prefix changed)")
+        elif _parent_version_advanced(
+                type_dir, info, tagged_ver):
+            ver = tagged_ver + 1
+            parent = info.parent
+            print(f"  → Generating v{ver} "
+                  f"(parent {parent} advanced)")
+        else:
+            print(f"  ✓ No changes (current: v{tagged_ver})")
+
+    # Orphan cleanup: remove vX.py files beyond tagged version
+    # that aren't the version being generated
+    if tagged_ver:
+        for v in VersionManager.find_versions(type_dir):
+            if v > tagged_ver and v != ver:
+                (type_dir / f"v{v}.py").unlink()
+                print(f"  🗑 Removed orphaned v{v}.py")
+
+    # AKA stale warning
+    if (ver and tagged_ver and ver > tagged_ver
+            and info.also_known_as):
+        tagged_info = _get_tagged_info(type_dir)
+        if tagged_info:
+            tagged_aka = set(tagged_info.also_known_as)
+            cur_aka = set(info.also_known_as)
+            stale = cur_aka & tagged_aka
+            if stale:
+                _warning_count += 1
+                print(
+                    "  ⚠ WARNING: alsoKnownAs overlaps with "
+                    "tagged release — these URIs already "
+                    "belong to a released version. Clear "
+                    "alsoKnownAs in archetype.py:"
+                )
+                for uri in sorted(stale):
+                    print(f"    - {uri}")
 
     if ver:
         try:
-            code = VersionedCodeGenerator().generate(type_dir, ver)
+            code = VersionedCodeGenerator().generate(
+                type_dir, ver
+            )
             (type_dir / f"v{ver}.py").write_text(code)
             print(f"  ✓ Generated v{ver}.py")
         except Exception as e:
@@ -492,7 +735,8 @@ def build_type(type_dir: Path, reuse_version: bool = False) -> bool:
 
     if InitFileGenerator.generate_local_init(type_dir):
         (type_dir / "__init__.py").write_text(
-            AUTOGEN_WARNING + InitFileGenerator.generate_local_init(type_dir)
+            AUTOGEN_WARNING
+            + InitFileGenerator.generate_local_init(type_dir)
         )
         print("  ✓ Updated __init__.py")
     return True
@@ -504,21 +748,29 @@ def topological_sort(type_dirs: List[Path]) -> List[Path]:
     
     for d in type_dirs:
         info = ArchetypeLoader.read_archetype(d)
-        p = info.get('parent') if info else None
-        deps[d.name] = inflection.underscore(p) if (p and p != 'VocabType') else None
+        parent = info.parent if info else None
+        deps[d.name] = (
+            inflection.underscore(parent)
+            if (parent and parent != 'VocabType') else None
+        )
 
     result, visited = [], set()
-    def visit(name):
-        if name in visited: return
-        visited.add(name)
-        if (p := deps.get(name)) and p in deps: visit(p)
-        if name in by_name: result.append(by_name[name])
 
-    for name in deps: visit(name)
+    def visit(name):
+        if name in visited:
+            return
+        visited.add(name)
+        if (parent := deps.get(name)) and parent in deps:
+            visit(parent)
+        if name in by_name:
+            result.append(by_name[name])
+
+    for name in deps:
+        visit(name)
     return result
 
 
-def _run_build(type_names: Optional[List[str]], reuse: bool) -> int:
+def _run_build(type_names: Optional[List[str]]) -> int:
     types_dir = _get_project_root() / VOCAB_PACKAGE_NAME / VOCAB_TYPES_SUBDIR
     all_dirs = [d for d in sorted(types_dir.iterdir()) 
                 if d.is_dir() and (d / "archetype.py").exists()]
@@ -534,7 +786,7 @@ def _run_build(type_names: Optional[List[str]], reuse: bool) -> int:
     sorted_dirs = topological_sort(target_dirs)
     print(f"Sorted build order: {[d.name for d in sorted_dirs]}")
     
-    results = {d.name: build_type(d, reuse) for d in sorted_dirs}
+    results = {d.name: build_type(d) for d in sorted_dirs}
     
     # Generate __init__ files
     vocab_dir = _get_project_root() / VOCAB_PACKAGE_NAME
@@ -546,7 +798,11 @@ def _run_build(type_names: Optional[List[str]], reuse: bool) -> int:
     )
     
     success = sum(results.values())
-    print(f"\nResults: {success} built, {len(results) - success} errors")
+    errors = len(results) - success
+    parts = [f"{success} built", f"{errors} errors"]
+    if _warning_count:
+        parts.append(f"{_warning_count} warnings")
+    print(f"\nResults: {', '.join(parts)}")
     return 0 if all(results.values()) else 1
 
 
@@ -571,14 +827,13 @@ def main():
     
     p_build = sub.add_parser('build', help='Build types')
     p_build.add_argument('types', nargs='*', help='Type names (e.g., Annotation)')
-    p_build.add_argument('--reuse-version-number', action='store_true', help='Republish version')
     
     sub.add_parser('clean', help='Clean generated files')
     
     args = parser.parse_args()
     if args.command == 'clean':
         return _run_clean()
-    return _run_build(args.types, args.reuse_version_number)
+    return _run_build(args.types)
 
 
 if __name__ == '__main__':

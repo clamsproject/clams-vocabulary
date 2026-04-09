@@ -5,12 +5,7 @@ from clams_vocabulary.types.document.archetype import Document
 
 class TextDocument(Document):
     description: ClassVar[str] = "A text document."
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/TextDocument/v1",
-        "http://mmif.clams.ai/0.4.0/vocabulary/TextDocument/",
-        "http://mmif.clams.ai/0.4.1/vocabulary/TextDocument/",
-        "http://mmif.clams.ai/0.4.2/vocabulary/TextDocument/",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     text: Optional[Dict[str, Any]] = Field(
         None,

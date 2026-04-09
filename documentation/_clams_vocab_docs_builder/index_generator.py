@@ -3,7 +3,6 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-from .utils import find_tag_for_version
 
 if sys.version_info >= (3, 11):
     import tomllib
@@ -49,12 +48,7 @@ def generate_index_rst(
         if rst_file != 'index' and rst_file not in rst_files:
             rst_files.append(rst_file)
 
-    git_tag = find_tag_for_version(repo_dir, latest_vocab_version)
-    changelog_url = (
-        f"{repository_url}/blob/{git_tag}/CHANGELOG.md"
-        if git_tag
-        else f"{repository_url}/blob/main/CHANGELOG.md"
-    )
+    changelog_url = f"{repository_url}/blob/main/CHANGELOG.md"
 
     template = template_env.get_template('index.rst.j2')
     content = template.render(
