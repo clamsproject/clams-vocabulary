@@ -1,4 +1,20 @@
 
+## releasing 1.2.0 (2026-04-09)
+### Overview
+
+Adds `origins` and `origination` properties to `Document` type. Also includes codegen infrastructure improvements.
+
+### Additions
+
+- `origins` (`List[str]`) and `origination` (`str`) properties on `Document` (https://github.com/clamsproject/clams-vocabulary/pull/18) and subsequent child Document types
+- `build-tools/clean.py` standalone build artifact cleanup tool
+- Support "dev" version of documentation build with a dirty working tree
+
+### Changes
+
+- A better change detection mechanism for `vX.py` generation
+
+
 ## releasing 1.1.3 (2026-04-07)
 ### Overview
 
