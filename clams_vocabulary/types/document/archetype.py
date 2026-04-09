@@ -35,11 +35,11 @@ class Document(Thing, DocumentTypesBase):
             "multi-source derivation (e.g., OCR over consecutive "
             "video frames producing a single consensus document). "
             "When this property is set, an accompanying "
-            "<code>originsClass</code> should also be provided to "
+            "<code>origination</code> should also be provided to "
             "describe the nature of the derivation."
         ),
     )
-    originsClass: Optional[str] = Field(
+    origination: Optional[str] = Field(
         None,
         description=(
             "Describes the nature of the derivation relationship "
