@@ -1,10 +1,18 @@
+"""
+This file is auto-generated.
+This file should never be manually modified, and must stay FROZEN.
+"""
 from typing import ClassVar, List, Optional
 from pydantic import Field
-from clams_vocabulary.types.thing.archetype import Thing
+from clams_vocabulary.types.thing.v1 import Thing_v1
 from clams_vocabulary.base import DocumentTypesBase
 
 
-class Document(Thing, DocumentTypesBase):
+class Document_v2(Thing_v1, DocumentTypesBase):
+    uri: ClassVar[str] = "http://clams.ai/vocabulary/type/Document/v2"
+    version: ClassVar[str] = "v2"
+    shortname: ClassVar[str] = "Document"
+
     description: ClassVar[str] = (
         "A document of some media type. Annotations directly or "
         "indirectly anchor to documents. In CLAMS, a document "

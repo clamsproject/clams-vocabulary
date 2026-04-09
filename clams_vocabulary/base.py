@@ -202,7 +202,7 @@ class TypesBase(BaseModel, metaclass=TypesBaseMeta):
 
     @classmethod
     def _serialize(cls):
-        """Serialize to URI string (works for both classes and instances)."""
+        """Serialize to URI string (class-level, for CLAMS type classes)."""
         return repr(cls)
 
     @model_serializer
@@ -226,8 +226,7 @@ class TypesBase(BaseModel, metaclass=TypesBaseMeta):
             "properties": properties
         }
 
-    @classmethod
-    def get_prefix(cls):
+    def get_prefix(self):
         """
         Get annotation ID prefix for this type.
 
@@ -237,13 +236,11 @@ class TypesBase(BaseModel, metaclass=TypesBaseMeta):
         :return: Prefix string for generating annotation IDs
         :rtype: str
         """
-        # CLAMS types have shortname as ClassVar, use that as key
-        if hasattr(cls, 'shortname'):
-            key = cls.shortname
+        if hasattr(self, 'shortname'):
+            key = self.shortname
         else:
-            # Generic types use full URI
-            key = repr(cls)
-        return cls._prefixes[key]
+            key = repr(self)
+        return self.__class__._prefixes[key]
 
     def set_prefix(self, prefix):
         """
@@ -262,9 +259,12 @@ class ClamsTypesBaseMeta(TypesBaseMeta):
     """
     Metaclass for CLAMS vocabulary types.
 
-    Inherits from TypesBaseMeta to get class-level _serialize() method.
     Provides class-level equality comparison with fuzzy version matching.
     """
+
+    def _serialize(cls):
+        """Class-level serialization to URI string."""
+        return repr(cls)
 
     @staticmethod
     def _compare_types(shortname1, version1, shortname2, version2, fuzzy):
