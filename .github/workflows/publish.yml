@@ -44,7 +44,7 @@ jobs:
         with:
           python-version: '3.10'
       - run: pip install -e .[dev]
-      - run: python3 build-tools/generate_vocab_snapshot.py build --reuse-version-number
+      - run: python3 build-tools/generate_vocab_snapshot.py build
       - name: Fail if codegen drift detected
         run: |
           if ! git diff --exit-code -- 'clams_vocabulary/'; then
