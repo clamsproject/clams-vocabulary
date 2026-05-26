@@ -22,12 +22,17 @@ def run_command(command, cwd=None, check=True):
     return result
 
 
-def build_docs_local(source_dir: Path, output_dir: Path):
+def build_docs_local(source_dir: Path, output_dir: Path,
+                     local_build: bool = False):
     """
     Builds documentation for the provided source directory.
 
     :param source_dir: Path to the source directory containing the project.
     :param output_dir: Path to the output directory for built documentation.
+    :param local_build: When True, additionally render a ``dev/`` hierarchy
+        from the current working tree (handy for previewing unreleased
+        archetype changes). CI publish builds leave this off so the
+        published site doesn't carry a duplicate of the latest tag.
     """
     print("--- Building clams-vocabulary documentation ---")
 
@@ -54,6 +59,7 @@ def build_docs_local(source_dir: Path, output_dir: Path):
         "-b", "html",  # build html
         "-a",          # write all files (rebuild everything)
         "-E",          # don't use a saved environment, reread all files
+        "-D", f"local_build={'1' if local_build else '0'}",
     ]
     run_command(sphinx_command)
 
@@ -80,11 +86,19 @@ def main():
         help="The directory for documentation output "
              "(default: docs-test)."
     )
+    parser.add_argument(
+        "--local-build",
+        action="store_true",
+        help="Also emit a 'dev/' hierarchy rendered from the current "
+             "working tree. Intended for local previews of unreleased "
+             "archetype changes; off by default so CI publish builds "
+             "don't duplicate the latest tag under a misleading URL."
+    )
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir)
     output_dir.mkdir(exist_ok=True)
-    build_docs_local(Path.cwd(), output_dir)
+    build_docs_local(Path.cwd(), output_dir, local_build=args.local_build)
 
 
 if __name__ == "__main__":

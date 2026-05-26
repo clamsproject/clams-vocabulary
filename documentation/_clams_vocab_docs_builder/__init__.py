@@ -123,7 +123,8 @@ def generate_all_rst(
     types_dir: Path,
     output_dir: Path,
     templates_dir: Path,
-    rebuild_index: bool = False
+    rebuild_index: bool = False,
+    local_build: bool = False,
 ):
     """
     Main entry point for RST generation.
@@ -133,6 +134,13 @@ def generate_all_rst(
     :param output_dir: Directory for generated RST files
     :param templates_dir: Directory containing Jinja2 templates
     :param rebuild_index: Force rebuild of type-to-vocab index cache
+    :param local_build: When True, additionally render a ``dev/``
+        hierarchy from the current working tree and use it as the
+        landing page's active version (for local previews of unreleased
+        archetype changes). When False (the CI publish default), only
+        per-tag hierarchies are rendered and the landing page points at
+        the most recent tagged vocab; the ``dev/`` fallback is still
+        emitted when no tags exist at all (pre-first-release setup).
     """
     print("Generating RST documentation from Pydantic vocabulary types")
     print("=" * 70)
@@ -247,9 +255,14 @@ def generate_all_rst(
             )
             generated_count += 1
 
-    # Always generate a "dev" hierarchy from current working tree
-    if latest_types:
-        prev_vocab = latest_vocab_version
+    # Optionally render a "dev" hierarchy from the current working tree.
+    # Enabled by --local-build for previewing unreleased archetype work,
+    # or as a fallback when no tags exist yet (pre-first-release setup so
+    # the landing page has something to link at).
+    render_dev = local_build or not latest_vocab_version
+    dev_dir = output_dir / 'dev'
+    if render_dev and latest_types:
+        prev_vocab = latest_vocab_version  # None when no tags exist
         generate_hierarchy_rst(
             latest_types, output_dir, 'dev',
             template_env, types_dir,
@@ -258,10 +271,20 @@ def generate_all_rst(
             latest_vocab='dev'
         )
         generated_count += 1
+        index_target = 'dev'
+    else:
+        # Sphinx renders any RST it finds in srcdir; remove a stale
+        # dev/ left by an earlier --local-build (or pre-fix) run so it
+        # doesn't bleed into the output.
+        if dev_dir.exists():
+            import shutil as _shutil
+            _shutil.rmtree(dev_dir)
+        index_target = latest_vocab_version
 
-    # Generate index page (use "dev" as the active version)
-    print("\nGenerating index.rst...")
-    generate_index_rst(repo_dir, output_dir, template_env, 'dev')
+    # Generate index page
+    if index_target:
+        print("\nGenerating index.rst...")
+        generate_index_rst(repo_dir, output_dir, template_env, index_target)
 
     print("\n" + "=" * 70)
     print("RST generation complete!")
@@ -285,7 +308,8 @@ def _generate_docs_hook(app):
             repo_dir=proj_root,
             types_dir=types_dir,
             output_dir=doc_dir,
-            templates_dir=templates_dir
+            templates_dir=templates_dir,
+            local_build=bool(int(app.config.local_build)),
         )
     except Exception as e:
         print(f"WARNING: RST generation failed: {e}")
@@ -296,6 +320,10 @@ def setup(app):
     """Sphinx extension setup."""
     app.add_directive('inheritance-tree', TreeNode)
     app.add_css_file('css/tree.css')
+    # Off by default so CI publish builds don't emit a "dev/" copy of the
+    # latest tag. Local previews set this via `docs.py --local-build`,
+    # which appends `-D local_build=1` to the sphinx invocation.
+    app.add_config_value('local_build', '0', 'env', [str])
 
     try:
         app.connect('builder-inited', _generate_docs_hook)
