@@ -337,6 +337,9 @@ This repository follows the CLAMS project tagging convention:
 5. Commit all generated files, tag the release, and push: `git tag 1.3.0 && git push origin main && git push origin 1.3.0`
 6. Tag push triggers the `publish.yml` workflow which uploads to PyPI, generates CHANGELOG, and publishes docs
 
+> [!NOTE]
+> Release PRs to `main` should be titled `releasing X.Y.Z`, consistent with the other CLAMS SDK repos (the org-wide release PR template enforces this). The shared `release-check` workflow runs here too, but it is a no-op for this repo because clams-vocabulary does not maintain a `documentation/target-versions.csv`. `build-tools/prep_release.py` exists for interface parity with the other SDK repos and currently performs no automated steps here.
+
 ### URI Prefix Change Workflow
 
 The vocabulary URIs are configured in `pyproject.toml` under `[project.urls]`:
