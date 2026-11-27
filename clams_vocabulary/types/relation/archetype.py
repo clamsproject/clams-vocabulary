@@ -10,6 +10,4 @@ class Relation(Annotation):
         "simultaneity or ordering in time of events or states. For image regions and video objects this could involve "
         "spatial relations or part-whole relations."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Relation/v5",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []

@@ -8,10 +8,7 @@ class Paragraph(Span):
         "A division of a piece of writing, usually dealing with a single theme and indicated by a new line, "
         "indentation, and/or numbering."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Paragraph/v1",
-        "http://vocab.lappsgrid.org/Paragraph",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = [
         "http://vocab.lappsgrid.org/Paragraph",
     ]

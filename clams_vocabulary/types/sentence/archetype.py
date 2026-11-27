@@ -8,10 +8,7 @@ class Sentence(Span):
         "A sequence of words capable of standing alone to make an assertion, ask a question, or give a command, "
         "usually consisting of a subject and a predicate containing a finite verb."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Sentence/v1",
-        "http://vocab.lappsgrid.org/Sentence",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = [
         "http://vocab.lappsgrid.org/Sentence",
     ]

@@ -13,9 +13,7 @@ class BoundingBox(Polygon):
         "sense on its parent type Polygon so technically we can do without BoundingBox, but it was introduced because "
         "the term is in widespread use."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/BoundingBox/v5",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     boxType: Optional[str] = Field(
         None,

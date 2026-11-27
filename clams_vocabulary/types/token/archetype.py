@@ -8,10 +8,7 @@ class Token(Span):
         "A string of one or more characters that serves as an indivisible unit for the purposes of morpho-syntactic "
         "labeling (part of speech tagging)."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Token/v1",
-        "http://vocab.lappsgrid.org/Token",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = [
         "http://vocab.lappsgrid.org/Token",
     ]

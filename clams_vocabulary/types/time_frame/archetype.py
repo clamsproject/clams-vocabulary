@@ -12,9 +12,7 @@ class TimeFrame(Interval):
         "A temporal interval in an audio or video stream. This is similar to the term segment used in audio "
         "processing, but that term has a different meaning in the image and video community."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/TimeFrame/v6",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     frameType: Optional[str] = Field(
         None,

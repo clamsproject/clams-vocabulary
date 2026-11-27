@@ -8,9 +8,7 @@ class Region(Annotation):
         "An annotation over a region in primary data where primary data can be a text, an image, an audio stream or a "
         "video streem. Typically one of the sub types of this will be used."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Region/v5",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     timeUnit: Optional[str] = Field(
         None,

@@ -8,8 +8,6 @@ class Chapter(TimeFrame):
         "Example case for when we do not want to use Segment with a specific segmentType or if we want to introduce "
         "special properties."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Chapter/v6",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     title: Optional[str] = Field(None, description="Title of the chapter")

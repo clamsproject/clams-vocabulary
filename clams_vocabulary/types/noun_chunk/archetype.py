@@ -8,10 +8,7 @@ class NounChunk(Span):
         "The initial portion of a non-recursive noun phrase up to the head, including determiners but not including "
         "postmodifying prepositional phrases or clauses."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/NounChunk/v1",
-        "http://vocab.lappsgrid.org/NounChunk",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = [
         "http://vocab.lappsgrid.org/NounChunk",
     ]

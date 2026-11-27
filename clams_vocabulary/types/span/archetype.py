@@ -13,9 +13,7 @@ class Span(Interval):
         "data (by using start and end offsets) or by linking to one or more other Annotations with the targets "
         "property."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Span/v5",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = [
         "http://vocab.lappsgrid.org/Region",
     ]
