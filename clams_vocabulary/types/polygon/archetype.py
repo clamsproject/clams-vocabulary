@@ -8,9 +8,7 @@ class Polygon(Region):
         "A polygon in an image or video. This is a two-dimensional object so if this occurs in a video it will be "
         "anchored to a particular frame or time point in the video."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Polygon/v5",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     coordinates: List[List[int]] = Field(
         ...,

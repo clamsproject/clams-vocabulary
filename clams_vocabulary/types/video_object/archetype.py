@@ -8,8 +8,6 @@ class VideoObject(Region):
         "A sequence of Polygons, where each Polygon is associated with a TimePoint. So a VideoObject is in effect a "
         "sequence of image objects at certain time points."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/VideoObject/v5",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     polygons: List[str] = Field(..., description="The Polygons that make up the object.")

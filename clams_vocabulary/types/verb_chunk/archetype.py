@@ -8,10 +8,7 @@ class VerbChunk(Span):
         "Non-recursive verb groups, which include modals, auxiliary verbs, and medial adverbs, and end at the head "
         "verb or predicate adjective."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/VerbChunk/v1",
-        "http://vocab.lappsgrid.org/VerbChunk",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = [
         "http://vocab.lappsgrid.org/VerbChunk",
     ]

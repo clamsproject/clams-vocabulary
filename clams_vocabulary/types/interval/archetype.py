@@ -10,9 +10,7 @@ class Interval(Region):
         "or more other Annotations with the targets property. This annotation type is intended to be an abstract type "
         "and typically one of the sub types will be used."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Interval/v5",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     start: Optional[int] = Field(
         None,

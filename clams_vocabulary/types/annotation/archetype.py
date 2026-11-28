@@ -13,9 +13,7 @@ class Annotation(Thing, AnnotationTypesBase):
         "Any kind of information added to a document. If an annotation is specific to a region over the primary data "
         "or a relation over such regions, specific sub-types should be used instead of this high-level type."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/Annotation/v6",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
 
     document: Optional[str] = Field(
         None,
@@ -67,4 +65,17 @@ class Annotation(Thing, AnnotationTypesBase):
                     "this property is used, the <code>label</code> property must be one of the keys and the keys must "
                     "match to the values defined in the <code>labelset</code> or <code>labelsetUri</code> "
                     "properties."
+    )
+    scores: Optional[List[float]] = Field(
+        None,
+        description="Scores of the parts of this annotation from the model that produced it, one score per part, in "
+                    "order. The parts are the annotation itself, as a single-element list (e.g., the probability of "
+                    "a recognized word in a <code>Token</code>); the annotations in <code>targets</code>, in the "
+                    "same order (e.g., the word probabilities of the tokens of a <code>Sentence</code>); or "
+                    "sub-intervals that the app defines and documents (e.g., fixed-length audio windows merged into "
+                    "a <code>TimeFrame</code>). What a score means (probability, similarity, confidence, etc.) and "
+                    "its range depend on the model, and apps should document them in their metadata. "
+                    "<br><br>"
+                    "[note] Unlike <code>classification</code>, which maps each label to a score for the whole "
+                    "annotation, <code>scores</code> holds one score for each part. [/note]"
     )

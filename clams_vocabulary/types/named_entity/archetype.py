@@ -8,10 +8,7 @@ class NamedEntity(Span):
         "A phrase that clearly identifies an individual from others that have similar attributes, such as the name of "
         "a person, organization, location, artifact, etc. as well as temporal expressions."
     )
-    alsoKnownAs: ClassVar[list[str]] = [
-        "http://mmif.clams.ai/vocabulary/NamedEntity/v1",
-        "http://vocab.lappsgrid.org/NamedEntity",
-    ]
+    alsoKnownAs: ClassVar[list[str]] = []
     similarTo: ClassVar[list[str]] = [
         "http://vocab.lappsgrid.org/NamedEntity",
     ]
