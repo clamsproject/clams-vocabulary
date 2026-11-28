@@ -15,15 +15,17 @@ See [mmif#230](https://github.com/clamsproject/mmif/issues/230) for the underlyi
 Ensure the following checks pass:
 
 1. Make your changes to type archetypes (`archetype.py` files) ([details](#develop-anchor))
-1. `python build-tools/generate_vocab_snapshot.py build` completes without errors ([details](#build-anchor))
+1. `python build-tools/generate_vocab_snapshot.py build` completes without errors, manual inspection of generated `vX.py` and `__init__.py` files ([details](#build-anchor))
 1. `python -m pytest tests/` shows no failures
 1. `python build-tools/docs.py` completes without errors, manual inspection of generated HTML
    - DO NOT commit generated documentation files; documentation generation will be handled by the CI workflow and published separately from code changes
-1. Commit all archetype changes **and** the generated `vX.py` and `__init__.py` files together
+1. `python build-tools/generate_vocab_snapshot.py clean` deletes the new `vX.py` files and restores the `__init__.py` files
+1. Commit the archetype changes only
+   - DO NOT commit generated `vX.py` and `__init__.py` files; a maintainer generates and commits them once per release ([details](#release-anchor))
 1. Submit a pull request with your changes
 
 > [!IMPORTANT]
-> The CI publish workflow includes a `codegen-check` job that regenerates all types and verifies the output matches what is committed. If you forget to commit regenerated files, the release will be blocked.
+> Generated `vX.py` and `__init__.py` files are committed only at release. The build numbers a new version from the last release tag, so each build before the release rewrites the same `vX.py`, and a `vX.py` in git must stay frozen. The CI publish workflow includes a `codegen-check` job that regenerates all types and blocks the release if the output does not match what is committed.
 
 ## Coding Conventions
 
@@ -196,7 +198,7 @@ from clams_vocabulary.enums.time_unit.v2 import TimeUnit_v2 as TimeUnit
 - If `TimeUnit` is updated to `v3`, the build system will **not** update your type. Your type will continue to use `v2`.
 - Useful for legacy types or types with strict semantic constraints that are incompatible with newer vocabulary versions.
 
-This means when you choose to "Pin Version,", you first need to ensure that the specific version you are importing exists, not as the archetype. Technically, this means you need to git-commit and build the dependency type first (doesn't need to release a new vocab version at this point), before you can pin to it in your type.
+This means when you choose to "Pin Version,", you first need to ensure that the specific version you are importing exists, not as the archetype. Since `vX.py` files are committed only at release, you can pin only to a version of the dependency type that is already released.
 
 <a id="develop-anchor"></a>
 ## Developing Types
@@ -234,11 +236,11 @@ This means when you choose to "Pin Version,", you first need to ensure that the 
    ```bash
    python build-tools/generate_vocab_snapshot.py build type_name
    ```
-   The build system uses git to detect uncommitted changes. If changes are found, it automatically generates a new version (e.g., v6 → v7).
+   The build system compares the archetype with the version at the last release tag. If changes are found, it automatically generates a new version (e.g., v6 → v7).
 
 3. **Verify**: Old versions remain frozen and unchanged. Only the new version reflects your changes.
 
-**Note**: If the archetype has no uncommitted changes in git, the build will skip version generation.
+**Note**: If the archetype has no changes since the last release tag, the build will skip version generation.
 
 ### Updating Property Names
 
@@ -325,6 +327,7 @@ This repository follows the CLAMS project tagging convention:
 >
 > The documentation builder (`_clams_vocab_docs_builder/utils.py:find_tag_for_version`) resolves version numbers to git tags by regex-searching all tags for the version string. This means it transparently handles both legacy `mmif-x.y.z` tags and plain `x.y.z` tags — no special-casing is needed when adding new releases.
 
+<a id="release-anchor"></a>
 ### Release Process (Vocab 1.X)
 
 > [!IMPORTANT]
@@ -334,7 +337,7 @@ This repository follows the CLAMS project tagging convention:
 2. Build package: `python build-tools/build.py` (pip install + sdist/wheel, no codegen)
 3. Run tests: `python build-tools/test.py`
 4. Verify documentation locally (optional): `python build-tools/docs.py --output-dir docs-test`
-5. Commit all generated files, tag the release, and push: `git tag 1.3.0 && git push origin main && git push origin 1.3.0`
+5. Commit all generated files (the only point where `vX.py` and `__init__.py` files are committed), tag the release, and push: `git tag 1.3.0 && git push origin main && git push origin 1.3.0`
 6. Tag push triggers the `publish.yml` workflow which uploads to PyPI, generates CHANGELOG, and publishes docs
 
 > [!NOTE]
@@ -348,7 +351,7 @@ The vocabulary URIs are configured in `pyproject.toml` under `[project.urls]`:
 
 These are used by `generate_vocab_snapshot.py` to construct the `uri` ClassVar in generated `vX.py` files (e.g., `type_prefix + "/Annotation/v2"`). The Sphinx documentation builder then reads `uri` from the generated classes at runtime to display on type pages. The `alsoKnownAs` ClassVar in archetypes lists old URIs for backward compatibility, so that URI-based lookups via `URI_TO_TYPE` still resolve after a prefix change.
 
-Old versions (`vX.py`) are **not** regenerated when the prefix changes. Only the latest version is republished with the new URI. This will make sure the `aKa` values are not pointing to then-nonexistent new URIs for old versions. Also, once `vX.py` file is in a git commit, it's completely frozen and it should never be modified again anyway.
+Old versions (`vX.py`) are **not** regenerated when the prefix changes. Only the latest version is republished with the new URI. This will make sure the `aKa` values are not pointing to then-nonexistent new URIs for old versions. Also, once `vX.py` file is in a release, it's completely frozen and it should never be modified again anyway.
 
 #### Changing Type Prefix URL
 
